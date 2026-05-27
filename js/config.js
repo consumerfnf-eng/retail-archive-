@@ -91,6 +91,28 @@ const CONFIG = {
         debug: 'debug',
         fabric: null                // fabric 없음
       }
+    },
+    {
+      // 25FW 국내 브랜드 시트 (한국)
+      // 모든 행 = KR, brandGroup은 '국내 브랜드'로 자동 분류
+      id: '1ie6e9jQAkauBdBssqCH1DuyZHcGLyb2KDTysFdHV3Vc',
+      gid: '0',
+      label: '국내 브랜드',
+      defaultSeason: '2025-12',
+      defaultCountry: 'KR',         // 한국 브랜드
+      columns: {
+        season: 'season',
+        country: null,
+        brand: 'brand',
+        gender: 'gender',
+        category: 'category',
+        product_name: 'product_name',
+        color: 'color',
+        hex: 'image_hex_color',
+        image_url: 'image_url',
+        debug: 'debug',
+        fabric: null                // 시트에 fabric 컬럼 아직 없음
+      }
     }
   ],
 
@@ -107,7 +129,7 @@ const CONFIG = {
 // 브랜드 그룹 분류 (좌측 사이드바 표시 순서)
 // 시트의 label과 매칭 - 시트가 자동으로 그룹 결정
 // ============================================
-const BRAND_GROUP_ORDER = ["럭셔리", "컨템포러리", "애슬레저", "아웃도어·스포츠", "국내 브랜드", "기타"];
+const BRAND_GROUP_ORDER = ["럭셔리", "컨템포러리", "애슬레저", "아웃도어·스포츠", "기타"];
 
 // ============================================
 // Country 코드 → 라벨 매핑
@@ -150,6 +172,8 @@ const BRAND_GROUP_MAP = {
   "Urban Revivo": "컨템포러리",
   "Rosemoo": "컨템포러리",
   "Uniqlo": "컨템포러리",
+  // 한국 브랜드들도 컨템포러리에 포함
+  "썸웨어버터": "컨템포러리",
 
   // === 애슬레저 (Athleisure / Sportswear) ===
   "Adidas": "애슬레저",
