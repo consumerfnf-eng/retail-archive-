@@ -15,7 +15,7 @@ function download(filename, rows) {
 }
 
 function colorRows(data) {
-  const head = ["season","brand_group","brand","gender","category","subcategory","fabric","fabric_group","product_name",
+  const head = ["season","country","brand_group","brand","gender","category","subcategory","fabric","fabric_group","product_name",
                 "color_names","hex_codes","color_count","pct_in_image","image_url"];
   const rows = [head];
   data.forEach(d => {
@@ -39,6 +39,7 @@ function colorRows(data) {
     const count = Math.max(hexes.length, names.filter(Boolean).length);
     rows.push([
       d.season || '',
+      d.country || 'GL',
       d.brandGroup || '',
       d.brand,
       d.gender,
@@ -58,7 +59,7 @@ function colorRows(data) {
 }
 
 function productRows(data) {
-  const head = ["season","brand_group","brand","gender","category","subcategory","fabric","fabric_group","product_name",
+  const head = ["season","country","brand_group","brand","gender","category","subcategory","fabric","fabric_group","product_name",
                 "colors","hex_colors","top_hex","image_url"];
   const rows = [head];
   data.forEach(d => {
@@ -67,6 +68,7 @@ function productRows(data) {
       : ((d.hex_breakdown && d.hex_breakdown[0]) ? d.hex_breakdown[0].hex : "");
     rows.push([
       d.season || '',
+      d.country || 'GL',
       d.brandGroup || '',
       d.brand,
       d.gender,

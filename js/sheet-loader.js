@@ -94,14 +94,18 @@ async function loadSingleSheet(sheetCfg, sheetIndex) {
     // image_url
     const imageUrl = get(cols.image_url);
 
+    // country: 시트에 country 컬럼 있으면 그 값, 없으면 sheetCfg.defaultCountry
+    let country = normalizeCountry(get(cols.country)) || sheetCfg.defaultCountry || 'GL';
+
     // 브랜드 그룹: 명시적 매핑이 있으면 그걸 쓰고, 없으면 시트 라벨
     const brandGroup = BRAND_GROUP_MAP[brand] || sheetCfg.label;
 
     data.push({
-      _id: `s${sheetIndex}-${i}`,  // 시트 간 ID 충돌 방지
-      _sheetLabel: sheetCfg.label,  // 어느 시트에서 온 데이터인지
+      _id: `s${sheetIndex}-${i}`,
+      _sheetLabel: sheetCfg.label,
       month: season,
       season: season,
+      country: country,
       brand: brand,
       gender: gender,
       category: category,

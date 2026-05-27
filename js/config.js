@@ -14,9 +14,11 @@ const CONFIG = {
       gid: '0',
       label: '애슬레저',           // 카테고리 그룹 라벨
       defaultSeason: '2025-12',    // season 컬럼 없을 때 fallback
+      defaultCountry: 'GL',        // country 컬럼 없거나 빈값일 때 fallback
       // 컬럼 매핑 (시트마다 다를 수 있어서 명시)
       columns: {
         season: null,              // season 컬럼 없음
+        country: null,             // country 컬럼 없음 → defaultCountry 사용
         brand: 'brand',
         gender: 'gender',
         category: 'category1',     // 'category1' 사용
@@ -33,8 +35,10 @@ const CONFIG = {
       gid: '0',
       label: '아웃도어·스포츠',
       defaultSeason: '2025-09',
+      defaultCountry: 'GL',
       columns: {
         season: 'season',          // A열에 season
+        country: null,
         brand: 'brand',
         gender: 'gender',
         category: 'category',
@@ -51,8 +55,10 @@ const CONFIG = {
       gid: '0',
       label: '럭셔리',
       defaultSeason: '2025-12',
+      defaultCountry: 'GL',
       columns: {
         season: 'season',
+        country: null,
         brand: 'brand',
         gender: 'gender',
         category: 'category',
@@ -62,6 +68,28 @@ const CONFIG = {
         image_url: 'image_url',
         debug: 'debug',
         fabric: 'material'         // 럭셔리 시트는 'material' 컬럼이 fabric
+      }
+    },
+    {
+      // 중국 컬러 트렌드 시트
+      // 모든 행 = CN, brandGroup은 브랜드별로 자동 분류됨 (BRAND_GROUP_MAP 참조)
+      id: '1tA9UpzRober_qfosSOv2hwkrq5d8hAG-jeEn8dY21RQ',
+      gid: '0',
+      label: '중국 컬러',           // brandGroup default (사실상 BRAND_GROUP_MAP이 우선)
+      defaultSeason: '2025-09',
+      defaultCountry: 'CN',         // 이 시트의 모든 행은 중국
+      columns: {
+        season: 'season',
+        country: null,              // country 컬럼 없음 → defaultCountry 사용
+        brand: 'brand',
+        gender: 'gender',
+        category: 'category',
+        product_name: 'product_name',
+        color: null,                // color 컬럼 없음
+        hex: 'image_hex_color',
+        image_url: 'image_url',     // 거의 비어있음 (사진 없음)
+        debug: 'debug',
+        fabric: null                // fabric 없음
       }
     }
   ],
@@ -79,13 +107,72 @@ const CONFIG = {
 // 브랜드 그룹 분류 (좌측 사이드바 표시 순서)
 // 시트의 label과 매칭 - 시트가 자동으로 그룹 결정
 // ============================================
-const BRAND_GROUP_ORDER = ["럭셔리", "애슬레저", "아웃도어·스포츠", "국내 브랜드", "기타"];
+const BRAND_GROUP_ORDER = ["럭셔리", "컨템포러리", "애슬레저", "아웃도어·스포츠", "국내 브랜드", "기타"];
 
-// 명시적 브랜드 → 그룹 매핑 (시트 라벨로 자동 결정되지만, 예외 처리용)
-// 비워두면 시트의 label이 그대로 brandGroup이 됨
+// ============================================
+// Country 코드 → 라벨 매핑
+// 시트의 country 컬럼 값을 정규화
+// ============================================
+const COUNTRY_ORDER = ["GL", "CN", "KR"];
+const COUNTRY_LABEL = {
+  "GL": "Global",
+  "CN": "China · 중국",
+  "KR": "Korea · 한국"
+};
+
+/**
+ * Country 값 정규화: 다양한 입력을 GL/CN/KR로
+ */
+function normalizeCountry(val) {
+  if (!val) return null;
+  const s = val.toString().trim().toUpperCase();
+  if (!s) return null;
+  // 정확히 일치
+  if (s === "GL" || s === "GLOBAL" || s === "글로벌") return "GL";
+  if (s === "CN" || s === "CHINA" || s === "중국") return "CN";
+  if (s === "KR" || s === "KOREA" || s === "한국") return "KR";
+  return s;  // 알 수 없는 값은 그대로 (디버깅용)
+}
+
+function countryLabel(code) {
+  return COUNTRY_LABEL[code] || code || "—";
+}
+
+// 명시적 브랜드 → 그룹 매핑
+// 여기 명시된 브랜드는 시트 위치와 무관하게 강제 배정
+// 명시 안 된 브랜드는 시트의 label을 따름
 const BRAND_GROUP_MAP = {
-  // 필요 시 여기에 예외 추가
-  // 예: "ALO YOGA": "애슬레저"
+  // === 컨템포러리 (Contemporary Fashion) ===
+  "JNBY": "컨템포러리",
+  "MO&Co.": "컨템포러리",
+  "MO&Co": "컨템포러리",     // 점 없는 버전 대응
+  "Miss Sixty": "컨템포러리",
+  "Urban Revivo": "컨템포러리",
+  "Rosemoo": "컨템포러리",
+  "Uniqlo": "컨템포러리",
+
+  // === 애슬레저 (Athleisure / Sportswear) ===
+  "Adidas": "애슬레저",
+  "Lululemon": "애슬레저",
+  "Puma": "애슬레저",
+  "New Balance": "애슬레저",
+  "FILA": "애슬레저",
+  "Asics": "애슬레저",
+  "K-Swiss": "애슬레저",
+  "Bodywild": "애슬레저",
+  "Anta Sports": "애슬레저",
+  "Anta": "애슬레저",
+  "Ducati": "애슬레저",
+  "Balabala": "애슬레저",
+
+  // === 아웃도어·스포츠 (Outdoor / Performance) ===
+  "Salomon": "아웃도어·스포츠",
+  "Goldwin": "아웃도어·스포츠",
+  "Kolon Sport": "아웃도어·스포츠",
+  "Columbia": "아웃도어·스포츠",
+  "The North Face": "아웃도어·스포츠",
+  "Kailas": "아웃도어·스포츠",
+  "Descente": "아웃도어·스포츠"
 };
 
 // ============================================

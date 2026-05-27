@@ -13,7 +13,8 @@ const removed = new Set();
 const state = {
   gender: "All",
   months: new Set(),
-  brandGroups: new Set(),    // 카테고리 그룹 필터 (애슬레저/아웃도어/럭셔리)
+  countries: new Set(),       // 국가 필터 (GL/CN/KR)
+  brandGroups: new Set(),
   brands: new Set(),
   categories: new Set(),
   subcategories: new Set(),
@@ -22,7 +23,8 @@ const state = {
   page: 1,
   facetOpen: {
     Period: true,
-    BrandGroups: true,        // 새 facet
+    Country: true,            // 새 facet
+    BrandGroups: true,
     Brands: true,
     Categories: true,
     Subcategories: false,
@@ -30,5 +32,5 @@ const state = {
   },
   brandGroupsOpen: new Set(),
   drillDown: null,
-  fabricCategoryView: "all"  // 분석 화면 카테고리 드롭다운 (all, top, bottom, outerwear, ...)
+  fabricCategoryView: "all"
 };

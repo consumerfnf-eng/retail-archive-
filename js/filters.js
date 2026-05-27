@@ -13,6 +13,7 @@ function genderScope() {
 function filtered() {
   return genderScope().filter(d =>
     (!state.months.size       || state.months.has(d.month)) &&
+    (!state.countries.size    || state.countries.has(d.country || "GL")) &&
     (!state.brandGroups.size  || state.brandGroups.has(d.brandGroup)) &&
     (!state.brands.size       || state.brands.has(d.brand)) &&
     (!state.categories.size   || state.categories.has(d.category)) &&
@@ -31,6 +32,7 @@ function buildGenderTabs() {
   $$("#genderTabs button").forEach(b => b.onclick = () => {
     state.gender = b.dataset.g;
     state.months.clear();
+    state.countries.clear();
     state.brandGroups.clear();
     state.brands.clear();
     state.categories.clear();
@@ -68,6 +70,15 @@ function facetCounts(scope, key) {
       if (bi !== -1) return 1;
       return b[1] - a[1];
     }
+    if (key === "country") {
+      // COUNTRY_ORDER 순서대로 (GL, CN, KR)
+      const ai = COUNTRY_ORDER.indexOf(a[0]);
+      const bi = COUNTRY_ORDER.indexOf(b[0]);
+      if (ai !== -1 && bi !== -1) return ai - bi;
+      if (ai !== -1) return -1;
+      if (bi !== -1) return 1;
+      return b[1] - a[1];
+    }
     return b[1] - a[1];
   });
 }
@@ -90,6 +101,7 @@ function buildFacets() {
   const scope = genderScope();
   const defs = [
     {id:"Period",       title:"Period · 시즌",       key:"month",       set:state.months,        fmt:monthLabel},
+    {id:"Country",      title:"Country · 국가",      key:"country",     set:state.countries,     fmt:countryLabel},
     {id:"BrandGroups",  title:"Category · 카테고리", key:"brandGroup",  set:state.brandGroups},
     {id:"Brands",       title:"Brands",              key:"brand",       set:state.brands},
     {id:"Categories",   title:"Item Categories",     key:"category",    set:state.categories},
@@ -213,6 +225,7 @@ function buildFacets() {
     const val = o.dataset.val;
     const set = ({
       Period: state.months,
+      Country: state.countries,
       BrandGroups: state.brandGroups,
       Brands: state.brands,
       Categories: state.categories,
@@ -277,6 +290,7 @@ function buildCrumbs() {
   const c = [`<span class="crumb static">${state.gender==='All'?'전체':esc(state.gender)}</span>`];
   const groups = [
     [state.months,        "month",      monthLabel],
+    [state.countries,     "country",    countryLabel],
     [state.brandGroups,   "brandGroup", null],
     [state.brands,        "brand",      null],
     [state.categories,    "category",   null],
@@ -296,6 +310,7 @@ function buildCrumbs() {
       const v = cr.dataset.val;
       ({
         month:      state.months,
+        country:    state.countries,
         brandGroup: state.brandGroups,
         brand:      state.brands,
         category:   state.categories,

@@ -1317,3 +1317,98 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
     max-width: 80px;
   }
 }
+
+/* ============================================
+   No-Image 모드 (컬러 블록만 있는 카드)
+   ============================================ */
+.imgbox.no-img {
+  background: var(--bg);
+}
+.color-card-wrap {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 1px;
+  background: var(--line);
+}
+.color-card-block {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+.color-card-empty {
+  grid-column: 1 / -1;
+  grid-row: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: var(--ink-soft);
+  background: var(--panel);
+  padding: 12px;
+  text-align: center;
+  font-style: italic;
+}
+/* 컬러 블록이 1~3개일 때만 한 줄로 */
+.color-card-wrap:has(.color-card-block:nth-child(1):nth-last-child(1)) {
+  grid-template-rows: 1fr;
+}
+.color-card-wrap:has(.color-card-block:nth-child(2):nth-last-child(1)) {
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: 1fr;
+}
+.color-card-wrap:has(.color-card-block:nth-child(3):nth-last-child(1)) {
+  grid-template-rows: 1fr;
+}
+
+/* Country 태그 (카드 우상단) */
+.ctag {
+  position: absolute;
+  top: 8px;
+  right: 36px;  /* card-x 옆 */
+  background: rgba(255,255,255,0.92);
+  color: var(--ink);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 3px 7px;
+  border-radius: 3px;
+  z-index: 2;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+}
+
+/* 모달의 컬러 블록 그리드 */
+.mimg.no-img {
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.modal-color-wrap {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+  background: var(--line);
+  padding: 2px;
+}
+.modal-color-block {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  min-height: 80px;
+  padding: 8px;
+}
+.modal-color-block span {
+  background: rgba(0,0,0,0.55);
+  color: #fff;
+  font-size: 9.5px;
+  font-family: 'SF Mono', Menlo, monospace;
+  padding: 2px 6px;
+  border-radius: 2px;
+  letter-spacing: 0.04em;
+}

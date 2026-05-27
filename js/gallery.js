@@ -13,14 +13,25 @@ function renderGallery(data) {
 
   const cards = pageData.map((d, i) => {
     const gi = start + i;
+    const hasImage = d.image_url && d.image_url.trim();
+    const hexes = (d.hex_colors || []).slice(0, 6);
+
+    // 이미지 없을 때: 컬러 블록 그리드로 표시
+    const imgContent = hasImage
+      ? `<div class="imgph">${PH_SVG}<span>${esc(d.product_name)}</span></div>
+         <img src="${esc(d.image_url)}" alt="${esc(d.product_name)}" loading="lazy"
+              onload="this.previousElementSibling.style.display='none'"
+              onerror="this.style.display='none'">`
+      : `<div class="color-card-wrap">
+           ${hexes.length ? hexes.map(h => `<div class="color-card-block" style="background:${esc(h)}"></div>`).join("") : `<div class="color-card-empty">${esc(d.product_name)}</div>`}
+         </div>`;
+
     return `<div class="pcard" data-idx="${gi}">
-      <div class="imgbox">
+      <div class="imgbox ${hasImage ? '' : 'no-img'}">
         <span class="mtag">${monthLabel(d.month)}</span>
+        ${d.country && d.country !== 'GL' ? `<span class="ctag">${esc(d.country)}</span>` : ''}
         <button class="card-x" data-rm="${d._id}" title="잘못 분류된 제품 — 제거">×</button>
-        <div class="imgph">${PH_SVG}<span>${esc(d.product_name)}</span></div>
-        <img src="${esc(d.image_url)}" alt="${esc(d.product_name)}" loading="lazy"
-             onload="this.previousElementSibling.style.display='none'"
-             onerror="this.style.display='none'">
+        ${imgContent}
       </div>
       <div class="pinfo">
         <div class="pbrand">${esc(d.brand)} · ${esc(d.gender)}</div>
@@ -93,17 +104,28 @@ function openModal(d) {
     `${esc(d.fabric)}${d.fabricKey ? ' <span style="color:var(--ink-soft);font-size:10px">· ' + esc(fabricLabel(d.fabricKey)) + '</span>' : ''}`
     : '—';
 
+  const hasImage = d.image_url && d.image_url.trim();
+  const hexes = (d.hex_colors || []).slice(0, 9);
+  const mimgContent = hasImage
+    ? `<div class="imgph">${PH_SVG}<span>이미지 불러올 수 없음</span></div>
+       <img src="${esc(d.image_url)}"
+            onload="this.previousElementSibling.style.display='none'"
+            onerror="this.style.display='none'">`
+    : `<div class="modal-color-wrap">
+         ${hexes.length
+           ? hexes.map(h => `<div class="modal-color-block" style="background:${esc(h)}"><span>${esc(h)}</span></div>`).join("")
+           : '<div class="color-card-empty">컬러 정보만 있음</div>'}
+       </div>`;
+
   $("#modalbox").innerHTML = `
-    <div class="mimg">
-      <div class="imgph">${PH_SVG}<span>이미지 불러올 수 없음</span></div>
-      <img src="${esc(d.image_url)}"
-           onload="this.previousElementSibling.style.display='none'"
-           onerror="this.style.display='none'">
+    <div class="mimg ${hasImage ? '' : 'no-img'}">
+      ${mimgContent}
     </div>
     <div class="mbody">
       <button class="mclose">&times;</button>
       <div class="mbrand">${esc(d.brand)} · ${esc(d.gender)}</div>
       <h3>${esc(d.product_name)}</h3>
+      <div class="mrow"><span class="k">Country</span><span class="v">${esc(countryLabel(d.country || 'GL'))}</span></div>
       <div class="mrow"><span class="k">Group</span><span class="v">${esc(d.brandGroup || '—')}</span></div>
       <div class="mrow"><span class="k">Season</span><span class="v">${esc(monthLabel(d.season) || '—')}</span></div>
       <div class="mrow"><span class="k">Category</span><span class="v">${esc(d.category)}</span></div>
@@ -111,8 +133,8 @@ function openModal(d) {
       <div class="mrow"><span class="k">Fabric</span><span class="v">${fabricDisplay}</span></div>
       <div style="font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-soft);margin:16px 0 4px">Colors</div>
       <div class="mcolorlist">${colorChips}</div>
-      <div style="margin-top:18px"><a href="${esc(d.image_url)}" target="_blank"
-         style="font-size:11px;color:var(--accent);letter-spacing:.05em">원본 이미지 열기 ↗</a></div>
+      ${hasImage ? `<div style="margin-top:18px"><a href="${esc(d.image_url)}" target="_blank"
+         style="font-size:11px;color:var(--accent);letter-spacing:.05em">원본 이미지 열기 ↗</a></div>` : ''}
     </div>`;
   $("#modal").classList.add("open");
   $("#modalbox .mclose").onclick = () => $("#modal").classList.remove("open");
