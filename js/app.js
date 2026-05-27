@@ -85,6 +85,26 @@ function bindGlobalEvents() {
     download(`color_raw_all_${stamp()}.csv`, colorRows(RETAIL_DATA.filter(d => !removed.has(d._id))));
   $("#csvProducts").onclick = () =>
     download(`products_${stamp()}.csv`, productRows(filtered()));
+
+  // Fabric CSV - 현재 분석 화면의 카테고리 필터 적용한 상세 분포
+  const csvFabDetail = $("#csvFabricDetail");
+  if (csvFabDetail) {
+    csvFabDetail.onclick = () => {
+      const cat = state.fabricCategoryView || "all";
+      const catLabel = cat === "all" ? "all" : cat;
+      download(
+        `fabric_detail_${catLabel}_${stamp()}.csv`,
+        fabricDetailRows(filtered(), cat)
+      );
+    };
+  }
+  // Fabric CSV - 카테고리 × 대표소재 피벗
+  const csvFabMatrix = $("#csvFabricMatrix");
+  if (csvFabMatrix) {
+    csvFabMatrix.onclick = () => {
+      download(`fabric_matrix_${stamp()}.csv`, fabricMatrixRows(filtered()));
+    };
+  }
 }
 
 /* ---- 초기화 ---- */

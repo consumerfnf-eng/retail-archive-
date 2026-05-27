@@ -96,25 +96,30 @@ function pctBarChart(rows) {
    ★ Fabric 히트맵 (카테고리 × Fabric)
    ============================================ */
 
-function fabricHeatmap(data) {
-  // fabric 데이터가 있는지 체크
+/* ============================================
+   Fabric Bubble Matrix
+   세로축: 대표 소재 (12개 분류)
+   가로축: 각 대표소재로 분류된 실제 fabric 텍스트들의 버블 (크기=갯수)
+   카테고리 드롭다운으로 필터링
+   ============================================ */
+function fabricBubbleMatrix(data) {
+  // fabric 데이터 있는지 체크
   const hasFabric = data.some(d => d.fabricKey);
   if (!hasFabric) {
     return `<div class="fabric-info" style="text-align:center;padding:30px 20px">
       <div style="font-size:14px;color:var(--ink);margin-bottom:6px;font-weight:600">⚙ Fabric 데이터 대기 중</div>
       <div style="line-height:1.6">아직 Google Sheets에 fabric 컬럼이 비어있습니다.<br>
-      시트 <b style="color:var(--ink)">J열</b>에 소재 정보를 입력하면 자동으로 히트맵이 표시됩니다.<br>
+      시트 fabric/material 컬럼에 소재 정보를 입력하면 자동으로 분석이 표시됩니다.<br>
       <span style="font-size:10.5px;opacity:0.8;display:inline-block;margin-top:8px">
         지원 키워드: cotton 100, cotton blend, denim, polyester, nylon, wool, cashmere, silk, modal, tencel, leather, suede, faux fur, sherpa, down 등
       </span></div>
     </div>`;
   }
 
-  // 카테고리 × Fabric 매트릭스 만들기
-  const cats = uniq(data.map(d => d.category || "—")).filter(c => c !== "—");
-  // 카테고리 정렬
-  const catOrder = ["outerwear","top","bottom","dress","shoe","bag","acc"];
-  cats.sort((a,b) => {
+  // 카테고리 드롭다운 옵션 (전체 + 실제 사용된 카테고리들)
+  const allCats = uniq(data.map(d => d.category || "—")).filter(c => c !== "—");
+  const catOrder = ["outerwear","top","bottom","dress","shoe","shoes","bag","acc"];
+  allCats.sort((a,b) => {
     const ai = catOrder.indexOf(a), bi = catOrder.indexOf(b);
     if (ai !== -1 && bi !== -1) return ai - bi;
     if (ai !== -1) return -1;
@@ -122,155 +127,124 @@ function fabricHeatmap(data) {
     return a.localeCompare(b);
   });
 
-  // 실제 사용된 fabric 카테고리만 (데이터가 있는 것)
-  const usedFabrics = new Set();
-  data.forEach(d => { if (d.fabricKey) usedFabrics.add(d.fabricKey); });
-  const fabrics = FABRIC_CATEGORIES.filter(f => usedFabrics.has(f.key));
+  // 선택된 카테고리로 필터링
+  const selectedCat = state.fabricCategoryView || "all";
+  const filteredData = selectedCat === "all"
+    ? data
+    : data.filter(d => d.category === selectedCat);
 
-  // 매트릭스 카운트
-  const matrix = {}; // matrix[cat][fabKey] = count
-  const catTotals = {}; // 카테고리별 (fabric 분류된 것만) 총합
-  cats.forEach(c => {
-    matrix[c] = {};
-    catTotals[c] = 0;
-    fabrics.forEach(f => {
-      matrix[c][f.key] = data.filter(d =>
-        d.category === c && d.fabricKey === f.key
-      ).length;
-      catTotals[c] += matrix[c][f.key];
+  // 카테고리별 카운트 (드롭다운 옵션에 표시용)
+  const catCounts = {};
+  data.forEach(d => {
+    const c = d.category || "—";
+    catCounts[c] = (catCounts[c] || 0) + 1;
+  });
+
+  // 드롭다운 옵션
+  const dropdownOpts = [
+    `<option value="all" ${selectedCat === "all" ? "selected" : ""}>전체 (${data.length}개)</option>`,
+    ...allCats.map(c =>
+      `<option value="${esc(c)}" ${selectedCat === c ? "selected" : ""}>${esc(c)} (${catCounts[c] || 0}개)</option>`
+    )
+  ].join("");
+
+  // 각 대표소재(fabricKey)별로, 그 안에 어떤 실제 fabric 텍스트가 들어있는지 집계
+  // matrix[fabricKey] = { 'fabricText1': count1, 'fabricText2': count2, ... }
+  const matrix = {};
+  filteredData.forEach(d => {
+    if (!d.fabricKey) return;
+    const fk = d.fabricKey;
+    const fabText = (d.fabric || "").trim() || "(빈값)";
+    if (!matrix[fk]) matrix[fk] = {};
+    matrix[fk][fabText] = (matrix[fk][fabText] || 0) + 1;
+  });
+
+  // 대표소재 정렬 (FABRIC_CATEGORIES 순서 따라가되, 실제 데이터 있는 것만)
+  const activeFabrics = FABRIC_CATEGORIES.filter(f => matrix[f.key]);
+
+  // 각 대표소재별 총 카운트
+  const fabricTotals = {};
+  activeFabrics.forEach(f => {
+    fabricTotals[f.key] = Object.values(matrix[f.key]).reduce((s, c) => s + c, 0);
+  });
+
+  // 최대 버블 크기 결정용 (전체 fabric 중 최대 카운트)
+  let maxCount = 0;
+  activeFabrics.forEach(f => {
+    Object.values(matrix[f.key]).forEach(c => {
+      if (c > maxCount) maxCount = c;
     });
   });
 
-  // 그리드 컬럼 정의: 첫 칼럼은 카테고리 라벨, 나머지는 fabric
-  const colCount = fabrics.length;
-  const gridCols = `120px repeat(${colCount}, minmax(64px, 1fr))`;
+  // 버블 크기 계산: sqrt 스케일 (면적 비례)
+  const minR = 10, maxR = 36;
+  const calcR = (count) => {
+    if (maxCount === 0) return minR;
+    const ratio = Math.sqrt(count / maxCount);
+    return minR + (maxR - minR) * ratio;
+  };
 
-  // 헤더
-  const headerCells = fabrics.map(f =>
-    `<div class="heatmap-colhead" style="color:${f.color}">${f.short.replace('\n','<br>')}</div>`
-  ).join("");
+  // 행 렌더링
+  const rows = activeFabrics.map(f => {
+    const items = Object.entries(matrix[f.key])
+      .sort((a, b) => b[1] - a[1]); // 카운트 내림차순
 
-  // 본문 행
-  const rows = cats.map(cat => {
-    const cells = fabrics.map(f => {
-      const count = matrix[cat][f.key];
-      const total = catTotals[cat];
-      const pct = total > 0 ? (count / total * 100) : 0;
-
-      if (count === 0) {
-        return `<div class="heatmap-cell empty">·</div>`;
-      }
-
-      const isActive = state.drillDown &&
-        state.drillDown.category === cat &&
-        state.drillDown.fabric === f.key;
-      const bg = heatColor(pct, f.color);
-      const textColor = pct > 35 ? '#fff' : '#3d3d3a';
-
-      return `<div class="heatmap-cell ${isActive?'active':''}"
-        data-cat="${esc(cat)}" data-fab="${esc(f.key)}"
-        style="background:${bg};color:${textColor}"
-        title="${esc(cat)} × ${esc(f.label)}: ${count}개 (${pct.toFixed(1)}%)">
-        <div>
-          <div class="cell-pct">${pct.toFixed(0)}%</div>
-          <div class="cell-n">${count}</div>
+    const total = fabricTotals[f.key];
+    const bubbles = items.map(([fabText, count]) => {
+      const r = calcR(count);
+      const pct = (count / total * 100).toFixed(0);
+      // 텍스트 짧으면 버블 안에 카운트, 길면 옆에 라벨
+      return `<div class="fab-bubble-item" title="${esc(fabText)}: ${count}개 (전체의 ${pct}%)">
+        <div class="fab-bubble" style="width:${r*2}px;height:${r*2}px;background:${f.color}">
+          <span class="fab-bubble-n">${count}</span>
         </div>
+        <div class="fab-bubble-label">${esc(fabText.length > 30 ? fabText.slice(0,30) + '…' : fabText)}</div>
       </div>`;
     }).join("");
 
-    return `<div class="heatmap-row" style="grid-template-columns:${gridCols}">
-      <div class="heatmap-rowhead">${esc(cat)}<br><span style="font-size:9.5px;color:var(--ink-soft);font-weight:400">${catTotals[cat]}개</span></div>
-      ${cells}
+    const variantCount = items.length;
+
+    return `<div class="fab-row">
+      <div class="fab-row-head">
+        <div class="fab-row-color" style="background:${f.color}"></div>
+        <div class="fab-row-info">
+          <div class="fab-row-name">${esc(f.label)}</div>
+          <div class="fab-row-meta">${total}개 · ${variantCount}종</div>
+        </div>
+      </div>
+      <div class="fab-row-body">${bubbles}</div>
     </div>`;
   }).join("");
 
-  // 분류 안 된 제품 개수 (정보용)
-  const unclassified = data.filter(d => !d.fabricKey).length;
+  // 분류 안 된 제품 개수
+  const unclassified = filteredData.filter(d => !d.fabricKey).length;
   const noteHTML = unclassified > 0
-    ? `<div class="fabric-info">📋 ${unclassified}개 제품은 fabric 미분류 상태 (히트맵에서 제외됨)</div>`
+    ? `<div class="fabric-info" style="margin-top:10px">📋 ${unclassified}개 제품은 fabric 미분류 (분석에서 제외)</div>`
     : '';
 
-  return `<div class="heatmap-wrap">
-    <div class="heatmap">
-      <div class="heatmap-head" style="display:grid;grid-template-columns:${gridCols}">
-        <div class="heatmap-corner">Category ↓ / Fabric →</div>
-        ${headerCells}
-      </div>
-      ${rows}
+  // 빈 상태
+  const bodyHTML = activeFabrics.length === 0
+    ? `<div style="text-align:center;padding:40px;color:var(--ink-soft);font-size:12.5px">
+        선택한 카테고리에 fabric 데이터가 없습니다.
+      </div>`
+    : `<div class="fab-matrix">${rows}</div>`;
+
+  return `<div class="fab-controls">
+    <label class="fab-dropdown-wrap">
+      <span class="fab-dropdown-label">카테고리:</span>
+      <select id="fabricCategorySelect" class="fab-dropdown">${dropdownOpts}</select>
+    </label>
+    <div class="fab-legend">
+      <span style="color:var(--ink-soft);font-size:11px">버블 크기 = 해당 소재 표현의 제품 수</span>
     </div>
   </div>
-  <div class="heatmap-legend">
-    <span>각 셀: 해당 카테고리 내 fabric 비중 (%) · 클릭하면 상세 분석</span>
-    <span class="legend-scale">
-      <span>0%</span>
-      <span class="legend-scale-bar"></span>
-      <span>50%+</span>
-    </span>
-  </div>
+  ${bodyHTML}
   ${noteHTML}`;
 }
 
 /* ============================================
    드릴다운 패널 (카테고리 × Fabric 셀 클릭 시)
    ============================================ */
-function drillDownPanel(data) {
-  if (!state.drillDown) return '';
-  const {category, fabric} = state.drillDown;
-  const fabLabel = fabricLabel(fabric);
-  const fabColor = fabricColor(fabric);
-
-  // 해당 셀의 제품들
-  const items = data.filter(d => d.category === category && d.fabricKey === fabric);
-  if (!items.length) {
-    state.drillDown = null;
-    return '';
-  }
-
-  // 브랜드별 분포 (도트 매트릭스용)
-  const byBrand = {};
-  items.forEach(d => {
-    byBrand[d.brand] = (byBrand[d.brand] || 0) + 1;
-  });
-  const brandRows = Object.entries(byBrand)
-    .sort((a,b) => b[1] - a[1])
-    .slice(0, 12); // 상위 12개
-
-  const maxBrandCount = Math.max(...brandRows.map(r => r[1]));
-
-  const brandDots = brandRows.map(([brand, count]) => {
-    const dots = Array(count).fill(0).map(() =>
-      `<span class="dm-dot" style="background:${fabColor}"></span>`
-    ).join("");
-    return `<div class="dm-label">${esc(brand)}</div>
-      <div class="dm-cell">${dots}<span style="margin-left:6px;color:var(--ink-soft);font-size:10px">${count}</span></div>`;
-  }).join("");
-
-  // 컬러 분포
-  const families = colorFamilyDist(items);
-
-  return `<div class="drill-panel">
-    <div class="drill-head">
-      <div>
-        <div class="drill-title"><b>${esc(category)}</b> × <span style="color:${fabColor}">${esc(fabLabel)}</span></div>
-        <div class="drill-meta">${items.length}개 제품 · ${brandRows.length}개 브랜드</div>
-      </div>
-      <button class="drill-close" id="drillClose">×</button>
-    </div>
-    <div class="drill-grid">
-      <div class="drill-section">
-        <h5>① 브랜드별 분포 (도트 = 제품 1개)</h5>
-        <div class="dotmatrix" style="grid-template-columns:auto 1fr">
-          ${brandDots}
-        </div>
-      </div>
-      <div class="drill-section">
-        <h5>② 색상 분포</h5>
-        ${donutChart(families.slice(0, 8))}
-      </div>
-    </div>
-  </div>`;
-}
-
 /* ============================================
    메인 분석 화면
    ============================================ */
@@ -289,11 +263,10 @@ function renderAnalytics(data) {
         ${pctBarChart(countBy(data, "category"))}</div>
     </div>
 
-    <div class="sec-label">Fabric × Category Heatmap · 소재 분포도</div>
+    <div class="sec-label">Fabric Composition · 소재 구성 분석</div>
     <div class="card full" style="margin-bottom:24px">
-      <h4>③ Fabric Distribution · 카테고리별 소재 비중 (셀 클릭 → 상세)</h4>
-      ${fabricHeatmap(data)}
-      ${drillDownPanel(data)}
+      <h4>③ Fabric Distribution · 대표 소재별 실제 표현 분포</h4>
+      ${fabricBubbleMatrix(data)}
     </div>
 
     <div class="sec-label">Detail Breakdown · 세부 분석</div>
@@ -317,33 +290,11 @@ function renderAnalytics(data) {
 
 /* 분석 화면 이벤트 바인딩 */
 function bindAnalyticsEvents(data) {
-  // 히트맵 셀 클릭
-  $$(".heatmap-cell[data-cat]").forEach(cell => {
-    cell.onclick = () => {
-      const cat = cell.dataset.cat;
-      const fab = cell.dataset.fab;
-      // 같은 셀 재클릭 = 닫기
-      if (state.drillDown &&
-          state.drillDown.category === cat &&
-          state.drillDown.fabric === fab) {
-        state.drillDown = null;
-      } else {
-        state.drillDown = {category: cat, fabric: fab};
-      }
-      renderContent();
-      // 드릴다운 패널로 스크롤
-      setTimeout(() => {
-        const panel = document.querySelector('.drill-panel');
-        if (panel) panel.scrollIntoView({behavior:'smooth', block:'nearest'});
-      }, 100);
-    };
-  });
-
-  // 드릴다운 닫기
-  const closeBtn = $("#drillClose");
-  if (closeBtn) {
-    closeBtn.onclick = () => {
-      state.drillDown = null;
+  // 카테고리 드롭다운 변경
+  const sel = $("#fabricCategorySelect");
+  if (sel) {
+    sel.onchange = () => {
+      state.fabricCategoryView = sel.value;
       renderContent();
     };
   }

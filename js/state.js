@@ -29,5 +29,6 @@ const state = {
     Fabric: false
   },
   brandGroupsOpen: new Set(),
-  drillDown: null
+  drillDown: null,
+  fabricCategoryView: "all"  // 분석 화면 카테고리 드롭다운 (all, top, bottom, outerwear, ...)
 };
