@@ -105,16 +105,6 @@ function pctBarChart(rows) {
 function fabricBubbleMatrix(data) {
   // fabric 데이터 있는지 체크
   const hasFabric = data.some(d => d.fabricKey);
-  if (!hasFabric) {
-    return `<div class="fabric-info" style="text-align:center;padding:30px 20px">
-      <div style="font-size:14px;color:var(--ink);margin-bottom:6px;font-weight:600">⚙ Fabric 데이터 대기 중</div>
-      <div style="line-height:1.6">아직 Google Sheets에 fabric 컬럼이 비어있습니다.<br>
-      시트 fabric/material 컬럼에 소재 정보를 입력하면 자동으로 분석이 표시됩니다.<br>
-      <span style="font-size:10.5px;opacity:0.8;display:inline-block;margin-top:8px">
-        지원 키워드: cotton 100, cotton blend, denim, polyester, nylon, wool, cashmere, silk, modal, tencel, leather, suede, faux fur, sherpa, down 등
-      </span></div>
-    </div>`;
-  }
 
   // 카테고리 드롭다운 옵션 (전체 + 실제 사용된 카테고리들)
   const allCats = uniq(data.map(d => d.category || "—")).filter(c => c !== "—");
@@ -159,18 +149,21 @@ function fabricBubbleMatrix(data) {
     matrix[fk][fabText] = (matrix[fk][fabText] || 0) + 1;
   });
 
-  // 대표소재 정렬 (FABRIC_CATEGORIES 순서 따라가되, 실제 데이터 있는 것만)
-  const activeFabrics = FABRIC_CATEGORIES.filter(f => matrix[f.key]);
+  // 대표소재: 항상 12개 모두 표시 (데이터 없는 것도 회색으로)
+  const allFabrics = FABRIC_CATEGORIES;
 
-  // 각 대표소재별 총 카운트
+  // 각 대표소재별 총 카운트 (없으면 0)
   const fabricTotals = {};
-  activeFabrics.forEach(f => {
-    fabricTotals[f.key] = Object.values(matrix[f.key]).reduce((s, c) => s + c, 0);
+  allFabrics.forEach(f => {
+    fabricTotals[f.key] = matrix[f.key]
+      ? Object.values(matrix[f.key]).reduce((s, c) => s + c, 0)
+      : 0;
   });
 
   // 최대 버블 크기 결정용 (전체 fabric 중 최대 카운트)
   let maxCount = 0;
-  activeFabrics.forEach(f => {
+  allFabrics.forEach(f => {
+    if (!matrix[f.key]) return;
     Object.values(matrix[f.key]).forEach(c => {
       if (c > maxCount) maxCount = c;
     });
@@ -184,50 +177,71 @@ function fabricBubbleMatrix(data) {
     return minR + (maxR - minR) * ratio;
   };
 
-  // 행 렌더링
-  const rows = activeFabrics.map(f => {
-    const items = Object.entries(matrix[f.key])
-      .sort((a, b) => b[1] - a[1]); // 카운트 내림차순
+  // 전체 합계 (퍼센티지용)
+  const grandTotal = Object.values(fabricTotals).reduce((s, c) => s + c, 0);
 
+  // 행 렌더링 - 12개 모두 항상 표시
+  const rows = allFabrics.map(f => {
     const total = fabricTotals[f.key];
-    const bubbles = items.map(([fabText, count]) => {
-      const r = calcR(count);
-      const pct = (count / total * 100).toFixed(0);
-      // 텍스트 짧으면 버블 안에 카운트, 길면 옆에 라벨
-      return `<div class="fab-bubble-item" title="${esc(fabText)}: ${count}개 (전체의 ${pct}%)">
-        <div class="fab-bubble" style="width:${r*2}px;height:${r*2}px;background:${f.color}">
-          <span class="fab-bubble-n">${count}</span>
-        </div>
-        <div class="fab-bubble-label">${esc(fabText.length > 30 ? fabText.slice(0,30) + '…' : fabText)}</div>
-      </div>`;
-    }).join("");
+    const isEmpty = total === 0;
+    const sharePct = grandTotal > 0 ? (total / grandTotal * 100) : 0;
 
-    const variantCount = items.length;
+    let bodyContent;
+    if (isEmpty) {
+      bodyContent = `<div class="fab-row-empty">데이터 없음</div>`;
+    } else {
+      const items = Object.entries(matrix[f.key])
+        .sort((a, b) => b[1] - a[1]);
+      bodyContent = items.map(([fabText, count]) => {
+        const r = calcR(count);
+        const pct = (count / total * 100).toFixed(0);
+        return `<div class="fab-bubble-item" title="${esc(fabText)}: ${count}개 (그룹내 ${pct}%)">
+          <div class="fab-bubble" style="width:${r*2}px;height:${r*2}px;background:${f.color}">
+            <span class="fab-bubble-n">${count}</span>
+          </div>
+          <div class="fab-bubble-label">${esc(fabText.length > 30 ? fabText.slice(0,30) + '…' : fabText)}</div>
+        </div>`;
+      }).join("");
+    }
 
-    return `<div class="fab-row">
+    const variantCount = isEmpty ? 0 : Object.keys(matrix[f.key]).length;
+    const metaText = isEmpty
+      ? `<span style="opacity:0.5">0개</span>`
+      : `${total}개 · ${variantCount}종 · ${sharePct.toFixed(1)}%`;
+
+    return `<div class="fab-row ${isEmpty ? 'is-empty' : ''}">
       <div class="fab-row-head">
-        <div class="fab-row-color" style="background:${f.color}"></div>
+        <div class="fab-row-color" style="background:${f.color};${isEmpty ? 'opacity:0.3' : ''}"></div>
         <div class="fab-row-info">
-          <div class="fab-row-name">${esc(f.label)}</div>
-          <div class="fab-row-meta">${total}개 · ${variantCount}종</div>
+          <div class="fab-row-name" ${isEmpty ? 'style="opacity:0.5"' : ''}>${esc(f.label)}</div>
+          <div class="fab-row-meta">${metaText}</div>
         </div>
       </div>
-      <div class="fab-row-body">${bubbles}</div>
+      <div class="fab-row-body">${bodyContent}</div>
     </div>`;
   }).join("");
 
   // 분류 안 된 제품 개수
   const unclassified = filteredData.filter(d => !d.fabricKey).length;
-  const noteHTML = unclassified > 0
-    ? `<div class="fabric-info" style="margin-top:10px">📋 ${unclassified}개 제품은 fabric 미분류 (분석에서 제외)</div>`
-    : '';
+  const totalInScope = filteredData.length;
+  const classifiedCount = totalInScope - unclassified;
 
-  // 빈 상태
-  const bodyHTML = activeFabrics.length === 0
-    ? `<div style="text-align:center;padding:40px;color:var(--ink-soft);font-size:12.5px">
-        선택한 카테고리에 fabric 데이터가 없습니다.
-      </div>`
-    : `<div class="fab-matrix">${rows}</div>`;
+  // 상단 요약 + 안내
+  let statusHTML = '';
+  if (!hasFabric) {
+    statusHTML = `<div class="fabric-info" style="text-align:left;padding:14px 18px;margin-bottom:14px;background:#fff7f0;border:1px solid #f0d8c5;border-radius:6px">
+      <div style="font-size:13px;color:var(--ink);margin-bottom:4px;font-weight:600">⚙ Fabric 데이터 입력 대기 중</div>
+      <div style="line-height:1.6;font-size:11.5px">아직 시트에 fabric 데이터가 입력되지 않았습니다. 시트의 fabric/material 컬럼에 소재 정보를 입력하면 아래 표가 자동으로 채워집니다.</div>
+    </div>`;
+  } else if (classifiedCount === 0) {
+    statusHTML = `<div class="fabric-info" style="margin-bottom:12px">선택한 카테고리에 분류된 fabric 데이터가 없습니다 (${totalInScope}개 중 0개 분류).</div>`;
+  } else {
+    statusHTML = `<div class="fabric-stats">
+      <span><b>${classifiedCount}</b>개 분류됨</span>
+      ${unclassified > 0 ? `<span style="color:var(--ink-soft)">· ${unclassified}개 미분류</span>` : ''}
+      <span style="color:var(--ink-soft)">· 총 ${totalInScope}개</span>
+    </div>`;
+  }
 
   return `<div class="fab-controls">
     <label class="fab-dropdown-wrap">
@@ -238,15 +252,15 @@ function fabricBubbleMatrix(data) {
       <span style="color:var(--ink-soft);font-size:11px">버블 크기 = 해당 소재 표현의 제품 수</span>
     </div>
   </div>
-  ${bodyHTML}
-  ${noteHTML}`;
+  ${statusHTML}
+  <div class="fab-matrix">${rows}</div>`;
 }
 
 /* ============================================
-   드릴다운 패널 (카테고리 × Fabric 셀 클릭 시)
-   ============================================ */
-/* ============================================
    메인 분석 화면
+   ① Fabric Distribution (최상단, 도표만)
+   ② Color & Category (접기 가능)
+   ③ Detail Breakdown (접기 가능)
    ============================================ */
 function renderAnalytics(data) {
   if (!data.length) return '<div class="empty">분석할 데이터가 없습니다.</div>';
@@ -254,24 +268,43 @@ function renderAnalytics(data) {
   const colors = colorAnalysis(data);
   const families = colorFamilyDist(data);
 
+  // 접힘 상태 (state에 저장 안 된 경우 기본값 - Fabric만 열림)
+  if (!state.analyticsOpen) {
+    state.analyticsOpen = { fabric: true, color: false, detail: false };
+  }
+
+  const sec = (id, title, contentHTML) => {
+    const open = state.analyticsOpen[id];
+    return `<div class="anal-section ${open ? 'open' : 'closed'}" data-anal="${id}">
+      <div class="anal-head" data-toggle="${id}">
+        <span class="anal-caret">${open ? '▼' : '▶'}</span>
+        <span class="anal-title">${title}</span>
+      </div>
+      <div class="anal-body">${contentHTML}</div>
+    </div>`;
+  };
+
   return `
-    <div class="sec-label">Assortment Overview · 어소트먼트 분석</div>
-    <div class="analytics">
-      <div class="card"><h4>① Color Assortment · 색상 비중</h4>
-        ${donutChart(families)}</div>
-      <div class="card"><h4>② Category Assortment · 카테고리 비중 (%)</h4>
-        ${pctBarChart(countBy(data, "category"))}</div>
-    </div>
+    ${sec('fabric',
+      'Fabric Distribution · 소재 분포 분석',
+      `<div class="card full" style="margin:0">
+        ${fabricBubbleMatrix(data)}
+      </div>`
+    )}
 
-    <div class="sec-label">Fabric Composition · 소재 구성 분석</div>
-    <div class="card full" style="margin-bottom:24px">
-      <h4>③ Fabric Distribution · 대표 소재별 실제 표현 분포</h4>
-      ${fabricBubbleMatrix(data)}
-    </div>
+    ${sec('color',
+      'Color & Category Assortment · 색상/카테고리 비중',
+      `<div class="analytics">
+        <div class="card"><h4>Color Assortment · 색상 비중</h4>
+          ${donutChart(families)}</div>
+        <div class="card"><h4>Category Assortment · 카테고리 비중 (%)</h4>
+          ${pctBarChart(countBy(data, "category"))}</div>
+      </div>`
+    )}
 
-    <div class="sec-label">Detail Breakdown · 세부 분석</div>
-    <div class="analytics">
-      <div class="card full"><h4>Color Spectrum · 전체 색상 스펙트럼 (상위 ${Math.min(colors.length,16)})</h4>
+    ${sec('detail',
+      'Detail Breakdown · 세부 분석',
+      `<div class="card full"><h4>Color Spectrum · 전체 색상 스펙트럼 (상위 ${Math.min(colors.length,16)})</h4>
         <div class="spectrum">${colors.map(c =>
           `<span style="width:${c.pct}%;background:${esc(c.hex)}" title="${esc(c.hex)} ${c.pct.toFixed(1)}%"></span>`).join("")}</div>
         <div class="swatchwrap">${colors.slice(0,16).map(c => `
@@ -281,11 +314,14 @@ function renderAnalytics(data) {
             <div class="chex">${esc(c.hex)}</div>
           </div>`).join("")}</div>
       </div>
-      <div class="card"><h4>Brand Assortment · 브랜드 비중 (%)</h4>
-        ${pctBarChart(countBy(data, "brand"))}</div>
-      <div class="card"><h4>Subcategory Assortment · 세부 비중 (%)</h4>
-        ${pctBarChart(countBy(data, "subcategory"))}</div>
-    </div>`;
+      <div class="analytics" style="margin-top:16px">
+        <div class="card"><h4>Brand Assortment · 브랜드 비중 (%)</h4>
+          ${pctBarChart(countBy(data, "brand"))}</div>
+        <div class="card"><h4>Subcategory Assortment · 세부 비중 (%)</h4>
+          ${pctBarChart(countBy(data, "subcategory"))}</div>
+      </div>`
+    )}
+  `;
 }
 
 /* 분석 화면 이벤트 바인딩 */
@@ -298,4 +334,13 @@ function bindAnalyticsEvents(data) {
       renderContent();
     };
   }
+  // 섹션 접기/펼치기
+  $$(".anal-head[data-toggle]").forEach(h => {
+    h.onclick = () => {
+      const id = h.dataset.toggle;
+      if (!state.analyticsOpen) state.analyticsOpen = { fabric: true, color: false, detail: false };
+      state.analyticsOpen[id] = !state.analyticsOpen[id];
+      renderContent();
+    };
+  });
 }
