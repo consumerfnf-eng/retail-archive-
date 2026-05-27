@@ -54,8 +54,18 @@ function bindGlobalEvents() {
   $("#modal").onclick = e => {
     if (e.target.id === "modal") $("#modal").classList.remove("open");
   };
+  // Fabric 갤러리 모달 외부 클릭 닫기
+  const fabModal = $("#fabricModal");
+  if (fabModal) {
+    fabModal.onclick = e => {
+      if (e.target.id === "fabricModal") fabModal.classList.remove("open");
+    };
+  }
   document.addEventListener("keydown", e => {
-    if (e.key === "Escape") $("#modal").classList.remove("open");
+    if (e.key === "Escape") {
+      $("#modal").classList.remove("open");
+      if (fabModal) fabModal.classList.remove("open");
+    }
   });
 
   // 뷰 토글

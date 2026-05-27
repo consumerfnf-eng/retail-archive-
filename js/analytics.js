@@ -195,7 +195,10 @@ function fabricBubbleMatrix(data) {
       bodyContent = items.map(([fabText, count]) => {
         const r = calcR(count);
         const pct = (count / total * 100).toFixed(0);
-        return `<div class="fab-bubble-item" title="${esc(fabText)}: ${count}개 (그룹내 ${pct}%)">
+        return `<div class="fab-bubble-item fab-clickable"
+                     data-fabric-key="${esc(f.key)}"
+                     data-fabric-text="${esc(fabText)}"
+                     title="클릭: ${esc(fabText)} 제품 ${count}개 보기 (그룹내 ${pct}%)">
           <div class="fab-bubble" style="width:${r*2}px;height:${r*2}px;background:${f.color}">
             <span class="fab-bubble-n">${count}</span>
           </div>
@@ -210,7 +213,9 @@ function fabricBubbleMatrix(data) {
       : `${total}개 · ${variantCount}종 · ${sharePct.toFixed(1)}%`;
 
     return `<div class="fab-row ${isEmpty ? 'is-empty' : ''}">
-      <div class="fab-row-head">
+      <div class="fab-row-head ${!isEmpty ? 'fab-row-head-clickable' : ''}"
+           ${!isEmpty ? `data-fabric-key="${esc(f.key)}"` : ''}
+           ${!isEmpty ? `title="클릭: ${esc(f.label)} 전체 ${total}개 제품 보기"` : ''}>
         <div class="fab-row-color" style="background:${f.color};${isEmpty ? 'opacity:0.3' : ''}"></div>
         <div class="fab-row-info">
           <div class="fab-row-name" ${isEmpty ? 'style="opacity:0.5"' : ''}>${esc(f.label)}</div>
@@ -342,5 +347,110 @@ function bindAnalyticsEvents(data) {
       state.analyticsOpen[id] = !state.analyticsOpen[id];
       renderContent();
     };
+  });
+
+  // === Fabric 버블 클릭 → 해당 fabric 제품 갤러리 모달 ===
+  $$(".fab-bubble-item.fab-clickable").forEach(b => {
+    b.onclick = (e) => {
+      e.stopPropagation();
+      const fk = b.dataset.fabricKey;
+      const ft = b.dataset.fabricText;
+      openFabricGallery(data, fk, ft);
+    };
+  });
+
+  // === Fabric 행 헤더 클릭 → 그 대표소재 전체 제품 갤러리 모달 ===
+  $$(".fab-row-head-clickable").forEach(h => {
+    h.onclick = (e) => {
+      e.stopPropagation();
+      const fk = h.dataset.fabricKey;
+      openFabricGallery(data, fk, null);
+    };
+  });
+}
+
+/* ============================================
+   Fabric 갤러리 모달
+   특정 fabric의 제품들을 그리드로 표시
+   - fabricKey만 주면 → 그 대표소재 전체 제품
+   - fabricKey + fabricText 주면 → 그 정확한 fabric 텍스트의 제품만
+   ============================================ */
+function openFabricGallery(data, fabricKey, fabricText) {
+  // 필터링
+  let products;
+  let titleText;
+  if (fabricText) {
+    products = data.filter(d =>
+      d.fabricKey === fabricKey &&
+      (d.fabric || '').trim() === fabricText
+    );
+    titleText = `${fabricLabel(fabricKey)} · "${fabricText}"`;
+  } else {
+    products = data.filter(d => d.fabricKey === fabricKey);
+    titleText = `${fabricLabel(fabricKey)} · 전체`;
+  }
+
+  if (!products.length) {
+    showToast("해당 제품이 없습니다");
+    return;
+  }
+
+  // 분석 화면의 카테고리 필터도 반영 (이미 data가 필터링됐지만, 명시적으로)
+  const catFilter = state.fabricCategoryView || "all";
+  if (catFilter !== "all") {
+    products = products.filter(p => p.category === catFilter);
+  }
+
+  // 카드 생성
+  const cards = products.map((d, i) => {
+    const hasImage = d.image_url && d.image_url.trim();
+    const hexes = (d.hex_colors || []).slice(0, 6);
+    const imgContent = hasImage
+      ? `<div class="imgph">${PH_SVG}<span>${esc(d.product_name)}</span></div>
+         <img src="${esc(d.image_url)}" alt="${esc(d.product_name)}" loading="lazy"
+              onload="this.previousElementSibling.style.display='none'"
+              onerror="this.style.display='none'">`
+      : `<div class="color-card-wrap">
+           ${hexes.length ? hexes.map(h => `<div class="color-card-block" style="background:${esc(h)}"></div>`).join("") : `<div class="color-card-empty">${esc(d.product_name)}</div>`}
+         </div>`;
+
+    return `<div class="pcard fab-gal-card" data-pi="${i}">
+      <div class="imgbox ${hasImage ? '' : 'no-img'}">
+        <span class="mtag">${monthLabel(d.month)}</span>
+        ${d.country && d.country !== 'GL' ? `<span class="ctag">${esc(d.country)}</span>` : ''}
+        ${imgContent}
+      </div>
+      <div class="pinfo">
+        <div class="pbrand">${esc(d.brand)} · ${esc(d.gender)}</div>
+        <div class="pname">${esc(d.product_name)}</div>
+        <div class="pcat">${esc(d.category)}${d.fabric ? ' · ' + esc(d.fabric) : ''}</div>
+        <div class="pcolors">${(d.hex_colors || []).slice(0,7).map(h =>
+          `<span class="dot" style="background:${esc(h)}"></span>`).join("")}</div>
+      </div>
+    </div>`;
+  }).join("");
+
+  $("#fabricModalbox").innerHTML = `
+    <div class="fab-gal-head">
+      <div>
+        <div class="fab-gal-eyebrow">FABRIC GALLERY</div>
+        <h2 class="fab-gal-title">${esc(titleText)}</h2>
+        <div class="fab-gal-meta">${products.length}개 제품</div>
+      </div>
+      <button class="fab-gal-close">&times;</button>
+    </div>
+    <div class="fab-gal-grid">${cards}</div>
+  `;
+  $("#fabricModal").classList.add("open");
+
+  // 닫기
+  $("#fabricModalbox .fab-gal-close").onclick = () => {
+    $("#fabricModal").classList.remove("open");
+  };
+
+  // 카드 클릭 → 제품 상세 모달 (기존 openModal 재사용)
+  $$(".fab-gal-card").forEach(c => c.onclick = () => {
+    const idx = +c.dataset.pi;
+    openModal(products[idx]);
   });
 }
