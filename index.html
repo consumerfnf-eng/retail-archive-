@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>F&F Retail Archive · Consumer Strategy Team</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- 로딩 화면 -->
+<div id="loader">
+  <div class="loader-inner">
+    <div class="loader-spinner"></div>
+    <div class="loader-text">Loading retail data...</div>
+    <div class="loader-sub" id="loaderSub">Google Sheets에서 가져오는 중</div>
+  </div>
+</div>
+
+<!-- 토픽바 -->
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-title">F&amp;F Retail Archive</div>
+    <div class="brand-sub">Consumer Strategy Team · 25FW Athleisure</div>
+  </div>
+  <div class="gender-tabs" id="genderTabs"></div>
+  <div class="top-stat" id="topStat"></div>
+</div>
+
+<div class="layout">
+  <!-- 사이드바 -->
+  <aside class="sidebar">
+    <div class="sidebar-head">
+      <span class="sidebar-title">Filters</span>
+      <button id="resetBtn" class="reset-btn">초기화</button>
+    </div>
+    <div id="facets"></div>
+  </aside>
+
+  <!-- 메인 -->
+  <main class="main">
+    <div class="main-head">
+      <div id="crumbs" class="crumbs"></div>
+      <div class="actions">
+        <div class="viewtoggle">
+          <button data-view="gallery" class="active">갤러리</button>
+          <button data-view="analytics">분석</button>
+        </div>
+        <div class="csv-group">
+          <button id="csvProducts" class="csv-btn">제품 CSV</button>
+          <button id="csvColorFiltered" class="csv-btn">컬러(필터) CSV</button>
+          <button id="csvColorAll" class="csv-btn">컬러(전체) CSV</button>
+        </div>
+      </div>
+    </div>
+    <div id="content"></div>
+  </main>
+</div>
+
+<!-- 모달 -->
+<div id="modal" class="modal">
+  <div id="modalbox" class="modalbox"></div>
+</div>
+
+<!-- 토스트 -->
+<div id="toast" class="toast"></div>
+
+<!-- 푸터 -->
+<footer class="footer">
+  <span>F&amp;F Consumer Strategy Team · Retail Archive</span>
+  <span>Data: Google Sheets · 25FW Athleisure</span>
+</footer>
+
+<!-- 외부 라이브러리: PapaParse (CSV 파싱) -->
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+
+<!-- 앱 스크립트 (순서 중요) -->
+<script src="js/config.js"></script>
+<script src="js/state.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/sheet-loader.js"></script>
+<script src="js/filters.js"></script>
+<script src="js/gallery.js"></script>
+<script src="js/analytics.js"></script>
+<script src="js/csv.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
