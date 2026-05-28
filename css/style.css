@@ -1599,92 +1599,103 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   gap: 16px;
 }
 
-/* Fabric 갤러리 모달 안의 카드만 영향 - .fab-gal-grid 안에 한정 */
+/* Fabric 갤러리 모달 안의 카드만 영향 - !important로 강제 */
 .fab-gal-grid .pcard {
-  background: var(--panel);
+  background: var(--panel) !important;
   border: 1px solid var(--line-soft);
   border-radius: 6px;
   overflow: hidden;
   cursor: pointer;
   transition: all 0.2s ease;
-  display: flex;
-  flex-direction: column;
+  display: flex !important;
+  flex-direction: column !important;
 }
 .fab-gal-grid .pcard:hover {
   border-color: var(--accent);
   transform: translateY(-2px);
   box-shadow: 0 6px 18px rgba(0,0,0,0.08);
 }
-.fab-gal-grid .imgbox {
-  position: relative;
-  width: 100%;
-  height: 240px;       /* 명확한 px height - aspect-ratio 안 먹는 환경 대응 */
-  background: #f5f3ee;
-  overflow: hidden;
-  flex-shrink: 0;
+.fab-gal-grid .pcard .imgbox {
+  position: relative !important;
+  width: 100% !important;
+  height: 240px !important;       /* aspect-ratio 안 먹어도 강제 */
+  aspect-ratio: auto !important;  /* 기존 aspect-ratio:1 무력화 */
+  background: #f5f3ee !important;
+  overflow: hidden !important;
+  flex-shrink: 0 !important;
+  display: block !important;
 }
-.fab-gal-grid .imgbox img {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  padding: 8px;
-  box-sizing: border-box;
-  display: block;
+.fab-gal-grid .pcard .imgbox img {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+  padding: 8px !important;
+  box-sizing: border-box !important;
+  display: block !important;
 }
-.fab-gal-grid .imgph {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: var(--ink-soft);
-  padding: 12px;
-  text-align: center;
-  font-size: 11px;
+.fab-gal-grid .pcard .imgph {
+  position: absolute !important;
+  inset: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: var(--ink-soft) !important;
+  padding: 12px !important;
+  text-align: center !important;
+  font-size: 11px !important;
 }
-.fab-gal-grid .pinfo {
-  padding: 10px 12px 12px;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+.fab-gal-grid .pcard .pinfo {
+  padding: 10px 12px 12px !important;
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+  visibility: visible !important;
 }
-.fab-gal-grid .pbrand {
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--ink-soft);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+.fab-gal-grid .pcard .pbrand {
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  color: var(--ink-soft) !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+  display: block !important;
+  visibility: visible !important;
 }
-.fab-gal-grid .pname {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--ink);
-  line-height: 1.3;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+.fab-gal-grid .pcard .pname {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  color: var(--ink) !important;
+  line-height: 1.3 !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+  overflow: hidden !important;
+  visibility: visible !important;
 }
-.fab-gal-grid .pcat {
-  font-size: 10.5px;
-  color: var(--ink-soft);
-  margin-top: 2px;
+.fab-gal-grid .pcard .pcat {
+  font-size: 10.5px !important;
+  color: var(--ink-soft) !important;
+  margin-top: 2px !important;
+  display: block !important;
+  visibility: visible !important;
 }
-.fab-gal-grid .pcolors {
-  display: flex;
-  gap: 3px;
-  margin-top: 4px;
+.fab-gal-grid .pcard .pcolors {
+  display: flex !important;
+  gap: 3px !important;
+  margin-top: 4px !important;
+  visibility: visible !important;
 }
-.fab-gal-grid .dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  border: 1px solid rgba(0,0,0,0.05);
-  flex-shrink: 0;
+.fab-gal-grid .pcard .dot {
+  width: 12px !important;
+  height: 12px !important;
+  border-radius: 50% !important;
+  border: 1px solid rgba(0,0,0,0.05) !important;
+  flex-shrink: 0 !important;
+  display: inline-block !important;
 }
 
 /* Fabric "All" 링크 스타일 */
@@ -1696,4 +1707,101 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 }
 .fabric-all-link:hover {
   background: linear-gradient(90deg, rgba(217,119,87,0.12), transparent);
+}
+
+/* ============================================
+   분석 화면 자체 필터 (Analytics Filter)
+   ============================================ */
+.analytics-filters {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px 18px;
+  margin-bottom: 14px;
+}
+.af-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+}
+.af-title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.af-reset {
+  background: none;
+  border: none;
+  font-size: 11px;
+  color: var(--accent);
+  cursor: pointer;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+.af-reset:hover {
+  background: rgba(217, 119, 87, 0.1);
+}
+.af-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 6px 0;
+}
+.af-row + .af-row {
+  border-top: 1px dashed var(--line-soft);
+}
+.af-label {
+  flex-shrink: 0;
+  min-width: 110px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  padding-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.af-cnt {
+  background: var(--accent);
+  color: white;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 8px;
+  min-width: 14px;
+  text-align: center;
+}
+.af-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  flex: 1;
+}
+.af-chip {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 4px 11px;
+  font-size: 11px;
+  color: var(--ink);
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+  white-space: nowrap;
+}
+.af-chip:hover {
+  border-color: var(--accent);
+  background: rgba(217, 119, 87, 0.05);
+}
+.af-chip.on {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+  font-weight: 600;
 }

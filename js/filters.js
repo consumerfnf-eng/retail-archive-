@@ -11,6 +11,7 @@ function genderScope() {
 }
 
 function filtered() {
+  // 사이드바 필터 적용 - 갤러리용
   return genderScope().filter(d =>
     (!state.months.size       || state.months.has(d.month)) &&
     (!state.countries.size    || state.countries.has(d.country || "GL")) &&
@@ -19,6 +20,20 @@ function filtered() {
     (!state.categories.size   || state.categories.has(d.category)) &&
     (!state.subcategories.size || state.subcategories.has(d.subcategory || "—")) &&
     (!state.fabrics.size      || state.fabrics.has(d.fabricKey || "__none__"))
+  );
+}
+
+/* ============================================
+   분석 화면 전용 필터
+   사이드바와 독립, state.analyticsFilter에서만 가져옴
+   ============================================ */
+function analyticsFiltered() {
+  const af = state.analyticsFilter;
+  return genderScope().filter(d =>
+    (!af.months.size       || af.months.has(d.month)) &&
+    (!af.countries.size    || af.countries.has(d.country || "GL")) &&
+    (!af.brandGroups.size  || af.brandGroups.has(d.brandGroup)) &&
+    (!af.brands.size       || af.brands.has(d.brand))
   );
 }
 

@@ -5,7 +5,12 @@
 
 /* ---- 메인 렌더 ---- */
 function renderContent() {
-  const data = filtered();
+  // 갤러리: 사이드바 필터 (filtered)
+  // 분석: 분석 화면 전용 필터 (analyticsFiltered) - 사이드바 무시
+  const data = state.view === "analytics"
+    ? analyticsFiltered()
+    : filtered();
+
   $("#content").innerHTML = state.view === "gallery"
     ? renderGallery(data)
     : renderAnalytics(data);

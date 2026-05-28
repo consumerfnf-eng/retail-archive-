@@ -19,11 +19,21 @@ const state = {
   categories: new Set(),
   subcategories: new Set(),
   fabrics: new Set(),
+
+  // === 분석 화면 전용 필터 (사이드바와 독립) ===
+  analyticsFilter: {
+    months: new Set(),
+    countries: new Set(),
+    brandGroups: new Set(),
+    brands: new Set(),
+    // category는 도표 안 드롭다운(fabricCategoryView)으로 따로 처리
+  },
+
   view: "gallery",
   page: 1,
   facetOpen: {
     Period: true,
-    Country: true,            // 새 facet
+    Country: true,
     BrandGroups: true,
     Brands: true,
     Categories: true,

@@ -268,17 +268,114 @@ function fabricBubbleMatrix(data) {
    ③ Detail Breakdown (접기 가능)
    ============================================ */
 function renderAnalytics(data) {
-  if (!data.length) return '<div class="empty">분석할 데이터가 없습니다.</div>';
+  if (!data.length) {
+    return `
+      ${renderAnalyticsFilters()}
+      <div class="empty" style="margin-top:20px">선택한 필터 조건에 맞는 데이터가 없습니다. 필터를 줄여보세요.</div>
+    `;
+  }
 
   return `
+    ${renderAnalyticsFilters()}
     <div class="card full" style="margin:0">
       ${fabricBubbleMatrix(data)}
     </div>
   `;
 }
 
+/* ============================================
+   분석 화면 자체 필터 UI
+   시즌 / 국가 / 브랜드그룹 / 브랜드
+   각각 다중선택 가능한 칩(chip) 형태
+   ============================================ */
+function renderAnalyticsFilters() {
+  const scope = genderScope();  // 성별 필터까지만 적용
+  const af = state.analyticsFilter;
+
+  // 각 facet별 옵션 수집
+  const months = uniq(scope.map(d => d.month)).filter(Boolean).sort();
+  const countries = uniq(scope.map(d => d.country || "GL"))
+    .sort((a, b) => COUNTRY_ORDER.indexOf(a) - COUNTRY_ORDER.indexOf(b));
+  const brandGroups = uniq(scope.map(d => d.brandGroup)).filter(Boolean)
+    .sort((a, b) => BRAND_GROUP_ORDER.indexOf(a) - BRAND_GROUP_ORDER.indexOf(b));
+
+  // 브랜드: 선택된 브랜드그룹이 있으면 그 그룹 브랜드만, 없으면 전체
+  const brandScope = af.brandGroups.size
+    ? scope.filter(d => af.brandGroups.has(d.brandGroup))
+    : scope;
+  const brands = uniq(brandScope.map(d => d.brand)).filter(Boolean).sort();
+
+  // 칩 그룹 렌더링
+  const chipGroup = (title, items, set, fmt, kind) => {
+    if (!items.length) return '';
+    const chips = items.map(v => {
+      const on = set.has(v);
+      const label = fmt ? fmt(v) : v;
+      return `<button class="af-chip ${on ? 'on' : ''}"
+                      data-af-kind="${kind}" data-af-val="${esc(v)}">
+        ${esc(label)}
+      </button>`;
+    }).join("");
+    const selCount = set.size;
+    return `<div class="af-row">
+      <div class="af-label">${title}${selCount ? ` <span class="af-cnt">${selCount}</span>` : ''}</div>
+      <div class="af-chips">${chips}</div>
+    </div>`;
+  };
+
+  const hasAny = af.months.size || af.countries.size || af.brandGroups.size || af.brands.size;
+
+  return `<div class="analytics-filters">
+    <div class="af-head">
+      <span class="af-title">분석 필터</span>
+      ${hasAny ? '<button class="af-reset" id="afReset">전체 해제</button>' : ''}
+    </div>
+    ${chipGroup("Period · 시즌", months, af.months, monthLabel, "months")}
+    ${chipGroup("Country · 국가", countries, af.countries, countryLabel, "countries")}
+    ${chipGroup("Category · 카테고리", brandGroups, af.brandGroups, null, "brandGroups")}
+    ${chipGroup("Brands", brands, af.brands, null, "brands")}
+  </div>`;
+}
+
 /* 분석 화면 이벤트 바인딩 */
 function bindAnalyticsEvents(data) {
+  // === 분석 필터 칩 클릭 ===
+  $$(".af-chip").forEach(chip => {
+    chip.onclick = () => {
+      const kind = chip.dataset.afKind;
+      const val = chip.dataset.afVal;
+      const set = state.analyticsFilter[kind];
+      if (!set) return;
+      if (set.has(val)) set.delete(val); else set.add(val);
+
+      // 브랜드 그룹 변경 시: 그 그룹에 속하지 않는 브랜드는 해제
+      if (kind === 'brandGroups' && state.analyticsFilter.brandGroups.size) {
+        const validBrands = new Set();
+        genderScope().forEach(d => {
+          if (state.analyticsFilter.brandGroups.has(d.brandGroup)) {
+            validBrands.add(d.brand);
+          }
+        });
+        state.analyticsFilter.brands = new Set(
+          [...state.analyticsFilter.brands].filter(b => validBrands.has(b))
+        );
+      }
+      renderContent();
+    };
+  });
+
+  // === 분석 필터 전체 해제 ===
+  const afReset = $("#afReset");
+  if (afReset) {
+    afReset.onclick = () => {
+      state.analyticsFilter.months.clear();
+      state.analyticsFilter.countries.clear();
+      state.analyticsFilter.brandGroups.clear();
+      state.analyticsFilter.brands.clear();
+      renderContent();
+    };
+  }
+
   // 카테고리 드롭다운 변경
   const sel = $("#fabricCategorySelect");
   if (sel) {
