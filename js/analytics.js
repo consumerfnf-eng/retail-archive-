@@ -270,62 +270,10 @@ function fabricBubbleMatrix(data) {
 function renderAnalytics(data) {
   if (!data.length) return '<div class="empty">분석할 데이터가 없습니다.</div>';
 
-  const colors = colorAnalysis(data);
-  const families = colorFamilyDist(data);
-
-  // 접힘 상태 (state에 저장 안 된 경우 기본값 - Fabric만 열림)
-  if (!state.analyticsOpen) {
-    state.analyticsOpen = { fabric: true, color: false, detail: false };
-  }
-
-  const sec = (id, title, contentHTML) => {
-    const open = state.analyticsOpen[id];
-    return `<div class="anal-section ${open ? 'open' : 'closed'}" data-anal="${id}">
-      <div class="anal-head" data-toggle="${id}">
-        <span class="anal-caret">${open ? '▼' : '▶'}</span>
-        <span class="anal-title">${title}</span>
-      </div>
-      <div class="anal-body">${contentHTML}</div>
-    </div>`;
-  };
-
   return `
-    ${sec('fabric',
-      'Fabric Distribution · 소재 분포 분석',
-      `<div class="card full" style="margin:0">
-        ${fabricBubbleMatrix(data)}
-      </div>`
-    )}
-
-    ${sec('color',
-      'Color & Category Assortment · 색상/카테고리 비중',
-      `<div class="analytics">
-        <div class="card"><h4>Color Assortment · 색상 비중</h4>
-          ${donutChart(families)}</div>
-        <div class="card"><h4>Category Assortment · 카테고리 비중 (%)</h4>
-          ${pctBarChart(countBy(data, "category"))}</div>
-      </div>`
-    )}
-
-    ${sec('detail',
-      'Detail Breakdown · 세부 분석',
-      `<div class="card full"><h4>Color Spectrum · 전체 색상 스펙트럼 (상위 ${Math.min(colors.length,16)})</h4>
-        <div class="spectrum">${colors.map(c =>
-          `<span style="width:${c.pct}%;background:${esc(c.hex)}" title="${esc(c.hex)} ${c.pct.toFixed(1)}%"></span>`).join("")}</div>
-        <div class="swatchwrap">${colors.slice(0,16).map(c => `
-          <div class="swatch">
-            <div class="chipc" style="background:${esc(c.hex)}"></div>
-            <div class="cpct">${c.pct.toFixed(1)}%</div>
-            <div class="chex">${esc(c.hex)}</div>
-          </div>`).join("")}</div>
-      </div>
-      <div class="analytics" style="margin-top:16px">
-        <div class="card"><h4>Brand Assortment · 브랜드 비중 (%)</h4>
-          ${pctBarChart(countBy(data, "brand"))}</div>
-        <div class="card"><h4>Subcategory Assortment · 세부 비중 (%)</h4>
-          ${pctBarChart(countBy(data, "subcategory"))}</div>
-      </div>`
-    )}
+    <div class="card full" style="margin:0">
+      ${fabricBubbleMatrix(data)}
+    </div>
   `;
 }
 

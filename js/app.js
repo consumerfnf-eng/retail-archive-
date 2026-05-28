@@ -3,38 +3,20 @@
    초기화, 렌더링, 이벤트 바인딩
    ============================================ */
 
-/* ---- 메인 렌더 ---- */
+/* ---- 메인 렌더 ----
+   항상 분석 화면(fabric matrix) 표시.
+   갤러리는 fabric 버블 클릭 시 모달로만 표시됨.
+   ============================================ */
 function renderContent() {
   const data = filtered();
-  $("#content").innerHTML = state.view === "gallery"
-    ? renderGallery(data)
-    : renderAnalytics(data);
+  $("#content").innerHTML = renderAnalytics(data);
+  bindAnalyticsEvents(data);
 
-  if (state.view === "gallery") {
-    // 카드 클릭 → 모달
-    $$(".pcard").forEach(c => c.onclick = () => openModal(data[+c.dataset.idx]));
-    // X 버튼 → 제거
-    $$(".card-x").forEach(b => b.onclick = (e) => {
-      e.stopPropagation();
-      removed.add(b.dataset.rm);
-      render();
-    });
-    // 복원 전체
-    const ra = $("#restoreAll");
-    if (ra) ra.onclick = () => { removed.clear(); render(); };
-    // 제거 목록 보기
-    const vr = $("#viewRemoved");
-    if (vr) vr.onclick = openRemovedModal;
-    // 페이저
-    $$(".pager button[data-pg]").forEach(b => b.onclick = () => {
-      state.page = +b.dataset.pg;
-      renderContent();
-      $(".main").scrollTo({top:0, behavior:"smooth"});
-    });
-  } else {
-    // 분석 화면 이벤트
-    bindAnalyticsEvents(data);
-  }
+  // 복원 바 (제거된 제품 있으면)
+  const ra = $("#restoreAll");
+  if (ra) ra.onclick = () => { removed.clear(); render(); };
+  const vr = $("#viewRemoved");
+  if (vr) vr.onclick = openRemovedModal;
 }
 
 function render() {
@@ -66,14 +48,6 @@ function bindGlobalEvents() {
       $("#modal").classList.remove("open");
       if (fabModal) fabModal.classList.remove("open");
     }
-  });
-
-  // 뷰 토글
-  $$(".viewtoggle button").forEach(b => b.onclick = () => {
-    state.view = b.dataset.view;
-    state.drillDown = null;  // 뷰 바꾸면 드릴다운 초기화
-    $$(".viewtoggle button").forEach(x => x.classList.toggle("active", x === b));
-    renderContent();
   });
 
   // 필터 초기화

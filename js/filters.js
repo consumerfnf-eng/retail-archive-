@@ -105,8 +105,7 @@ function buildFacets() {
     {id:"BrandGroups",  title:"Category · 카테고리", key:"brandGroup",  set:state.brandGroups},
     {id:"Brands",       title:"Brands",              key:"brand",       set:state.brands},
     {id:"Categories",   title:"Item Categories",     key:"category",    set:state.categories},
-    {id:"Subcategories",title:"Sub-categories",      key:"subcategory", set:state.subcategories},
-    {id:"Fabric",       title:"Fabric · 소재",       key:"fabric",      set:state.fabrics}
+    {id:"Subcategories",title:"Sub-categories",      key:"subcategory", set:state.subcategories}
   ];
 
   $("#facets").innerHTML = defs.map(def => {
