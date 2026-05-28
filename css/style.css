@@ -1805,3 +1805,27 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   border-color: var(--accent);
   font-weight: 600;
 }
+
+/* ============================================
+   분석 화면 → 갤러리로 돌아가기 버튼
+   ============================================ */
+.back-to-gallery {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 7px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink);
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.back-to-gallery:hover {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}

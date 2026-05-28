@@ -3,8 +3,35 @@
    초기화, 렌더링, 이벤트 바인딩
    ============================================ */
 
+/* ---- 상단 view 컨트롤 (갤러리 모드 / 분석 모드) ---- */
+function renderViewControls() {
+  const vc = $("#viewControls");
+  if (!vc) return;
+
+  if (state.view === "analytics") {
+    // 분석 화면: "← 갤러리로 돌아가기" 버튼
+    vc.innerHTML = `<button class="back-to-gallery" id="backToGallery">
+      ← 갤러리로 돌아가기
+    </button>`;
+    const btn = $("#backToGallery");
+    if (btn) {
+      btn.onclick = () => {
+        state.view = "gallery";
+        state.drillDown = null;
+        render();
+      };
+    }
+  } else {
+    // 갤러리 화면: 토글 숨김 (Fabric 메뉴에서만 분석 진입)
+    vc.innerHTML = '';
+  }
+}
+
 /* ---- 메인 렌더 ---- */
 function renderContent() {
+  // 상단 view 컨트롤 갱신
+  renderViewControls();
+
   // 갤러리: 사이드바 필터 (filtered)
   // 분석: 분석 화면 전용 필터 (analyticsFiltered) - 사이드바 무시
   const data = state.view === "analytics"
@@ -73,13 +100,8 @@ function bindGlobalEvents() {
     }
   });
 
-  // 뷰 토글
-  $$(".viewtoggle button").forEach(b => b.onclick = () => {
-    state.view = b.dataset.view;
-    state.drillDown = null;
-    $$(".viewtoggle button").forEach(x => x.classList.toggle("active", x === b));
-    renderContent();
-  });
+  // 뷰 토글은 renderViewControls()에서 동적으로 처리하므로
+  // 여기서 별도 바인딩 불필요 (Fabric 메뉴 클릭으로 진입, 돌아가기 버튼으로 복귀)
 
   // 필터 초기화
   $("#resetBtn").onclick = () => {
