@@ -1604,8 +1604,16 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   flex-direction: column;
 }
 .fab-gal-card .imgbox {
-  aspect-ratio: 3 / 4;  /* 의류 사진은 세로가 더 길게 */
+  aspect-ratio: 3 / 4;
   width: 100%;
+  background: #f5f3ee;  /* 살짝 베이지 배경 */
+}
+.fab-gal-card .imgbox img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain !important;  /* 짤리지 않게 전체 표시 */
+  padding: 6px;
+  box-sizing: border-box;
 }
 .fab-gal-card .pinfo {
   padding: 10px 12px 12px;
@@ -1646,4 +1654,15 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   height: 12px;
   border-radius: 50%;
   border: 1px solid rgba(0,0,0,0.05);
+}
+
+/* Fabric "All" 링크 스타일 */
+.fabric-all-link {
+  background: linear-gradient(90deg, rgba(217,119,87,0.06), transparent);
+  border-left: 3px solid var(--accent);
+  padding-left: 8px !important;
+  cursor: pointer;
+}
+.fabric-all-link:hover {
+  background: linear-gradient(90deg, rgba(217,119,87,0.12), transparent);
 }

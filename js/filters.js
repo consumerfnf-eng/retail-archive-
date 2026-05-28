@@ -105,7 +105,8 @@ function buildFacets() {
     {id:"BrandGroups",  title:"Category · 카테고리", key:"brandGroup",  set:state.brandGroups},
     {id:"Brands",       title:"Brands",              key:"brand",       set:state.brands},
     {id:"Categories",   title:"Item Categories",     key:"category",    set:state.categories},
-    {id:"Subcategories",title:"Sub-categories",      key:"subcategory", set:state.subcategories}
+    {id:"Subcategories",title:"Sub-categories",      key:"subcategory", set:state.subcategories},
+    {id:"Fabric",       title:"Fabric · 소재",       key:"fabric",      set:state.fabrics}
   ];
 
   $("#facets").innerHTML = defs.map(def => {
@@ -164,27 +165,16 @@ function buildFacets() {
       }).join("");
 
     } else if (def.id === "Fabric") {
-      const counts = fabricCounts(scope);
-      const hasFabric = counts.some(([k]) => k !== "__none__");
-
-      if (!hasFabric && counts.length === 0) {
-        body = '<div style="font-size:11px;color:var(--ink-soft);padding:6px 4px;line-height:1.5">아직 fabric 데이터 없음<br>(시트 J열에 추가 시 표시)</div>';
-      } else {
-        body = counts.map(([k, c]) => {
-          const on = def.set.has(k);
-          const isNone = k === "__none__";
-          const label = isNone ? "미분류" : fabricLabel(k);
-          const dotColor = isNone ? "#bbb" : fabricColor(k);
-          return `<div class="opt ${on?'on':''}" data-facet="Fabric" data-val="${esc(k)}">
-            <span class="box"></span>
-            <span class="lbl" style="display:flex;align-items:center;gap:6px">
-              <span style="width:8px;height:8px;border-radius:2px;background:${dotColor};flex-shrink:0"></span>
-              ${esc(label)}
-            </span>
-            <span class="cnt">${c}</span>
-          </div>`;
-        }).join("");
-      }
+      // Fabric은 체크박스 목록 대신 "All" 단일 항목만 표시
+      // 분석은 메인 도표에서 이루어짐
+      const totalCount = scope.filter(d => d.fabricKey).length;
+      body = `<div class="opt fabric-all-link" data-fabric-all="1">
+        <span class="lbl" style="display:flex;align-items:center;gap:6px;font-weight:600">
+          <span style="width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0"></span>
+          All · 전체 분석 보기
+        </span>
+        <span class="cnt">${totalCount}</span>
+      </div>`;
 
     } else {
       // 일반 facet (Period, BrandGroups, Categories, Subcategories)
@@ -220,6 +210,18 @@ function buildFacets() {
   });
 
   $$(".opt").forEach(o => o.onclick = () => {
+    // Fabric "All" 링크 → 메인 화면을 분석 도표로
+    if (o.dataset.fabricAll) {
+      state.view = "analytics";
+      renderContent();
+      // 분석 화면으로 부드럽게 스크롤
+      setTimeout(() => {
+        const mainEl = $(".main");
+        if (mainEl) mainEl.scrollTo({top: 0, behavior: "smooth"});
+      }, 50);
+      return;
+    }
+
     const fid = o.dataset.facet;
     const val = o.dataset.val;
     const set = ({
@@ -231,6 +233,7 @@ function buildFacets() {
       Subcategories: state.subcategories,
       Fabric: state.fabrics
     })[fid];
+    if (!set) return;  // fabric-all 등 set 없는 경우 보호
     if (set.has(val)) set.delete(val); else set.add(val);
 
     // BrandGroups 변경 시, 그 그룹에 속하지 않는 brand들은 선택 해제
