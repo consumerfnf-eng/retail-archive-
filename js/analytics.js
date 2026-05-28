@@ -464,7 +464,7 @@ function openFabricGallery(data, fabricKey, fabricText) {
       const hexes = (d.hex_colors || []).slice(0, 6);
       const imgContent = hasImage
         ? `<div class="imgph">${PH_SVG}<span>${esc(d.product_name)}</span></div>
-           <img src="${esc(d.image_url)}" alt="${esc(d.product_name)}" loading="lazy"
+           <img src="${esc(proxyImage(d.image_url))}" alt="${esc(d.product_name)}" loading="lazy"
                 referrerpolicy="no-referrer"
                 onload="this.previousElementSibling.style.display='none'"
                 onerror="this.style.display='none'">`

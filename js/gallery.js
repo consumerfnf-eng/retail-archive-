@@ -19,7 +19,7 @@ function renderGallery(data) {
     // 이미지 없을 때: 컬러 블록 그리드로 표시
     const imgContent = hasImage
       ? `<div class="imgph">${PH_SVG}<span>${esc(d.product_name)}</span></div>
-         <img src="${esc(d.image_url)}" alt="${esc(d.product_name)}" loading="lazy"
+         <img src="${esc(proxyImage(d.image_url))}" alt="${esc(d.product_name)}" loading="lazy"
               referrerpolicy="no-referrer"
               onload="this.previousElementSibling.style.display='none'"
               onerror="this.style.display='none'">`
@@ -109,7 +109,7 @@ function openModal(d) {
   const hexes = (d.hex_colors || []).slice(0, 9);
   const mimgContent = hasImage
     ? `<div class="imgph">${PH_SVG}<span>이미지 불러올 수 없음</span></div>
-       <img src="${esc(d.image_url)}"
+       <img src="${esc(proxyImage(d.image_url))}"
             referrerpolicy="no-referrer"
             onload="this.previousElementSibling.style.display='none'"
             onerror="this.style.display='none'">`
@@ -149,7 +149,7 @@ function openRemovedModal() {
     <div class="rm-item">
       <div class="rm-thumb">
         <div class="rm-ph">IMG</div>
-        <img src="${esc(d.image_url)}"
+        <img src="${esc(proxyImage(d.image_url))}"
              referrerpolicy="no-referrer"
              onload="this.previousElementSibling.style.display='none'"
              onerror="this.style.display='none'">

@@ -21,6 +21,30 @@ const monthLabel = m => {
 
 const PH_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>';
 
+/* ============================================
+   이미지 프록시
+   referer 차단하는 도메인(KREAM 등)은 images.weserv.nl로 우회
+   ============================================ */
+const PROXY_DOMAINS = [
+  'kream-phinf.pstatic.net',
+  'pstatic.net',
+  'naver.net',
+  'kreamcdn.com'
+];
+
+function proxyImage(url) {
+  if (!url || !url.trim()) return '';
+  const trimmed = url.trim();
+  // 이미 프록시 통과한 URL이면 그대로
+  if (trimmed.includes('images.weserv.nl')) return trimmed;
+  // PROXY_DOMAINS 중 하나라도 포함되면 프록시 적용
+  const needsProxy = PROXY_DOMAINS.some(d => trimmed.includes(d));
+  if (!needsProxy) return trimmed;
+  // images.weserv.nl 는 url 파라미터에 https:// 없이 도메인부터 받음
+  const stripped = trimmed.replace(/^https?:\/\//, '');
+  return `https://images.weserv.nl/?url=${encodeURIComponent(stripped)}`;
+}
+
 /* hex -> 색계열 그룹핑 (도넛 차트용) */
 function colorFamily(hex) {
   const h = hex.replace('#','');
