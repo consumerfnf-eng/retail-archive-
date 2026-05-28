@@ -440,62 +440,119 @@ function openFabricGallery(data, fabricKey, fabricText) {
     return;
   }
 
-  // 분석 화면의 카테고리 필터도 반영 (이미 data가 필터링됐지만, 명시적으로)
+  // 분석 화면의 카테고리 필터도 반영
   const catFilter = state.fabricCategoryView || "all";
   if (catFilter !== "all") {
     products = products.filter(p => p.category === catFilter);
   }
 
-  // 카드 생성
-  const cards = products.map((d, i) => {
-    const hasImage = d.image_url && d.image_url.trim();
-    const hexes = (d.hex_colors || []).slice(0, 6);
-    const imgContent = hasImage
-      ? `<div class="imgph">${PH_SVG}<span>${esc(d.product_name)}</span></div>
-         <img src="${esc(d.image_url)}" alt="${esc(d.product_name)}" loading="lazy"
-              onload="this.previousElementSibling.style.display='none'"
-              onerror="this.style.display='none'">`
-      : `<div class="color-card-wrap">
-           ${hexes.length ? hexes.map(h => `<div class="color-card-block" style="background:${esc(h)}"></div>`).join("") : `<div class="color-card-empty">${esc(d.product_name)}</div>`}
-         </div>`;
+  // 페이지네이션 (24개씩)
+  const PAGE_SIZE = 24;
+  let currentPage = 1;
+  const totalPages = Math.ceil(products.length / PAGE_SIZE);
 
-    return `<div class="pcard fab-gal-card" data-pi="${i}">
-      <div class="imgbox ${hasImage ? '' : 'no-img'}">
-        <span class="mtag">${monthLabel(d.month)}</span>
-        ${d.country && d.country !== 'GL' ? `<span class="ctag">${esc(d.country)}</span>` : ''}
-        ${imgContent}
-      </div>
-      <div class="pinfo">
-        <div class="pbrand">${esc(d.brand)} · ${esc(d.gender)}</div>
-        <div class="pname">${esc(d.product_name)}</div>
-        <div class="pcat">${esc(d.category)}${d.fabric ? ' · ' + esc(d.fabric) : ''}</div>
-        <div class="pcolors">${(d.hex_colors || []).slice(0,7).map(h =>
-          `<span class="dot" style="background:${esc(h)}"></span>`).join("")}</div>
-      </div>
-    </div>`;
-  }).join("");
+  // 페이지 렌더 함수
+  function renderPage(page) {
+    currentPage = page;
+    const start = (page - 1) * PAGE_SIZE;
+    const end = Math.min(start + PAGE_SIZE, products.length);
+    const pageProducts = products.slice(start, end);
 
-  $("#fabricModalbox").innerHTML = `
-    <div class="fab-gal-head">
-      <div>
-        <div class="fab-gal-eyebrow">FABRIC GALLERY</div>
-        <h2 class="fab-gal-title">${esc(titleText)}</h2>
-        <div class="fab-gal-meta">${products.length}개 제품</div>
+    const cards = pageProducts.map((d, i) => {
+      const globalIdx = start + i;
+      const hasImage = d.image_url && d.image_url.trim();
+      const hexes = (d.hex_colors || []).slice(0, 6);
+      const imgContent = hasImage
+        ? `<div class="imgph">${PH_SVG}<span>${esc(d.product_name)}</span></div>
+           <img src="${esc(d.image_url)}" alt="${esc(d.product_name)}" loading="lazy"
+                referrerpolicy="no-referrer"
+                onload="this.previousElementSibling.style.display='none'"
+                onerror="this.style.display='none'">`
+        : `<div class="color-card-wrap">
+             ${hexes.length ? hexes.map(h => `<div class="color-card-block" style="background:${esc(h)}"></div>`).join("") : `<div class="color-card-empty">${esc(d.product_name)}</div>`}
+           </div>`;
+
+      return `<div class="pcard fab-gal-card" data-pi="${globalIdx}">
+        <div class="imgbox ${hasImage ? '' : 'no-img'}">
+          <span class="mtag">${monthLabel(d.month)}</span>
+          ${d.country && d.country !== 'GL' ? `<span class="ctag">${esc(d.country)}</span>` : ''}
+          ${imgContent}
+        </div>
+        <div class="pinfo">
+          <div class="pbrand">${esc(d.brand)} · ${esc(d.gender)}</div>
+          <div class="pname">${esc(d.product_name)}</div>
+          <div class="pcat">${esc(d.category)}${d.fabric ? ' · ' + esc(d.fabric) : ''}</div>
+          <div class="pcolors">${(d.hex_colors || []).slice(0,7).map(h =>
+            `<span class="dot" style="background:${esc(h)}"></span>`).join("")}</div>
+        </div>
+      </div>`;
+    }).join("");
+
+    // 페이저 HTML (총 페이지 2개 이상일 때만)
+    let pagerHTML = '';
+    if (totalPages > 1) {
+      const pagerBtns = [];
+      // 처음/이전
+      pagerBtns.push(`<button class="fab-pager-btn" data-fpg="1" ${page === 1 ? 'disabled' : ''}>«</button>`);
+      pagerBtns.push(`<button class="fab-pager-btn" data-fpg="${page - 1}" ${page === 1 ? 'disabled' : ''}>‹</button>`);
+
+      // 페이지 번호 (현재 페이지 주변 5개)
+      const startP = Math.max(1, page - 2);
+      const endP = Math.min(totalPages, page + 2);
+      if (startP > 1) pagerBtns.push(`<span class="fab-pager-ellipsis">…</span>`);
+      for (let p = startP; p <= endP; p++) {
+        pagerBtns.push(`<button class="fab-pager-btn ${p === page ? 'active' : ''}" data-fpg="${p}">${p}</button>`);
+      }
+      if (endP < totalPages) pagerBtns.push(`<span class="fab-pager-ellipsis">…</span>`);
+
+      // 다음/끝
+      pagerBtns.push(`<button class="fab-pager-btn" data-fpg="${page + 1}" ${page === totalPages ? 'disabled' : ''}>›</button>`);
+      pagerBtns.push(`<button class="fab-pager-btn" data-fpg="${totalPages}" ${page === totalPages ? 'disabled' : ''}>»</button>`);
+
+      pagerHTML = `<div class="fab-pager">
+        <span class="fab-pager-info">${start + 1}-${end} / ${products.length}</span>
+        <div class="fab-pager-btns">${pagerBtns.join("")}</div>
+      </div>`;
+    }
+
+    $("#fabricModalbox").innerHTML = `
+      <div class="fab-gal-head">
+        <div>
+          <div class="fab-gal-eyebrow">FABRIC GALLERY</div>
+          <h2 class="fab-gal-title">${esc(titleText)}</h2>
+          <div class="fab-gal-meta">총 ${products.length}개 제품 ${totalPages > 1 ? `· ${totalPages}페이지` : ''}</div>
+        </div>
+        <button class="fab-gal-close">&times;</button>
       </div>
-      <button class="fab-gal-close">&times;</button>
-    </div>
-    <div class="fab-gal-grid">${cards}</div>
-  `;
+      <div class="fab-gal-grid">${cards}</div>
+      ${pagerHTML}
+    `;
+
+    // 닫기
+    $("#fabricModalbox .fab-gal-close").onclick = () => {
+      $("#fabricModal").classList.remove("open");
+    };
+
+    // 카드 클릭 → 제품 상세 모달
+    $$(".fab-gal-card").forEach(c => c.onclick = () => {
+      const idx = +c.dataset.pi;
+      openModal(products[idx]);
+    });
+
+    // 페이저 버튼 클릭
+    $$(".fab-pager-btn").forEach(b => b.onclick = () => {
+      if (b.disabled) return;
+      const newPage = +b.dataset.fpg;
+      if (newPage >= 1 && newPage <= totalPages) {
+        renderPage(newPage);
+        // 그리드 맨 위로 스크롤
+        const grid = $(".fab-gal-grid");
+        if (grid) grid.scrollTo({top: 0, behavior: "smooth"});
+      }
+    });
+  }
+
+  // 첫 페이지 렌더 + 모달 열기
+  renderPage(1);
   $("#fabricModal").classList.add("open");
-
-  // 닫기
-  $("#fabricModalbox .fab-gal-close").onclick = () => {
-    $("#fabricModal").classList.remove("open");
-  };
-
-  // 카드 클릭 → 제품 상세 모달 (기존 openModal 재사용)
-  $$(".fab-gal-card").forEach(c => c.onclick = () => {
-    const idx = +c.dataset.pi;
-    openModal(products[idx]);
-  });
 }
