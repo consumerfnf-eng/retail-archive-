@@ -21,8 +21,9 @@ function renderGallery(data) {
       ? `<div class="imgph">${PH_SVG}<span>${esc(d.product_name)}</span></div>
          <img src="${esc(proxyImage(d.image_url))}" alt="${esc(d.product_name)}" loading="lazy"
               referrerpolicy="no-referrer"
+              data-orig="${esc(d.image_url)}" data-tried="0"
               onload="this.previousElementSibling.style.display='none'"
-              onerror="this.style.display='none'">`
+              onerror="imgFallback(this, this.dataset.orig)">`
       : `<div class="color-card-wrap">
            ${hexes.length ? hexes.map(h => `<div class="color-card-block" style="background:${esc(h)}"></div>`).join("") : `<div class="color-card-empty">${esc(d.product_name)}</div>`}
          </div>`;
@@ -111,8 +112,9 @@ function openModal(d) {
     ? `<div class="imgph">${PH_SVG}<span>이미지 불러올 수 없음</span></div>
        <img src="${esc(proxyImage(d.image_url))}"
             referrerpolicy="no-referrer"
+            data-orig="${esc(d.image_url)}" data-tried="0"
             onload="this.previousElementSibling.style.display='none'"
-            onerror="this.style.display='none'">`
+            onerror="imgFallback(this, this.dataset.orig)">`
     : `<div class="modal-color-wrap">
          ${hexes.length
            ? hexes.map(h => `<div class="modal-color-block" style="background:${esc(h)}"><span>${esc(h)}</span></div>`).join("")
@@ -151,8 +153,9 @@ function openRemovedModal() {
         <div class="rm-ph">IMG</div>
         <img src="${esc(proxyImage(d.image_url))}"
              referrerpolicy="no-referrer"
+             data-orig="${esc(d.image_url)}" data-tried="0"
              onload="this.previousElementSibling.style.display='none'"
-             onerror="this.style.display='none'">
+             onerror="imgFallback(this, this.dataset.orig)">
       </div>
       <div class="rm-info">
         <div class="rm-name">${esc(d.product_name)}</div>

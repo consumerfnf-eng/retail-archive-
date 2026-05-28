@@ -23,7 +23,8 @@ const PH_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strok
 
 /* ============================================
    이미지 프록시
-   referer 차단하는 도메인(KREAM 등)은 images.weserv.nl로 우회
+   referer 차단하는 도메인(KREAM 등)은 프록시로 우회
+   여러 프록시를 fallback으로 시도
    ============================================ */
 const PROXY_DOMAINS = [
   'kream-phinf.pstatic.net',
@@ -32,17 +33,42 @@ const PROXY_DOMAINS = [
   'kreamcdn.com'
 ];
 
-function proxyImage(url) {
+// 프록시 후보들 - 순서대로 시도
+const PROXY_PROVIDERS = [
+  url => `https://images.weserv.nl/?url=${encodeURIComponent(url.replace(/^https?:\/\//, ''))}`,
+  url => `https://wsrv.nl/?url=${encodeURIComponent(url.replace(/^https?:\/\//, ''))}`,
+  url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+  url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+];
+
+function needsProxy(url) {
+  if (!url || !url.trim()) return false;
+  return PROXY_DOMAINS.some(d => url.includes(d));
+}
+
+function proxyImage(url, providerIdx) {
   if (!url || !url.trim()) return '';
   const trimmed = url.trim();
-  // 이미 프록시 통과한 URL이면 그대로
-  if (trimmed.includes('images.weserv.nl')) return trimmed;
-  // PROXY_DOMAINS 중 하나라도 포함되면 프록시 적용
-  const needsProxy = PROXY_DOMAINS.some(d => trimmed.includes(d));
-  if (!needsProxy) return trimmed;
-  // images.weserv.nl 는 url 파라미터에 https:// 없이 도메인부터 받음
-  const stripped = trimmed.replace(/^https?:\/\//, '');
-  return `https://images.weserv.nl/?url=${encodeURIComponent(stripped)}`;
+  if (trimmed.includes('images.weserv.nl') || trimmed.includes('wsrv.nl') ||
+      trimmed.includes('allorigins') || trimmed.includes('corsproxy')) return trimmed;
+  if (!needsProxy(trimmed)) return trimmed;
+  const idx = providerIdx || 0;
+  const provider = PROXY_PROVIDERS[idx];
+  if (!provider) return trimmed;  // 모든 프록시 시도 끝나면 원본
+  return provider(trimmed);
+}
+
+/* 이미지 fallback 핸들러 - onerror에서 다음 프록시 시도 */
+function imgFallback(imgEl, origUrl) {
+  const tried = parseInt(imgEl.dataset.tried || '0', 10);
+  const nextIdx = tried + 1;
+  if (nextIdx >= PROXY_PROVIDERS.length) {
+    // 모든 프록시 실패 - 숨김
+    imgEl.style.display = 'none';
+    return;
+  }
+  imgEl.dataset.tried = nextIdx;
+  imgEl.src = proxyImage(origUrl, nextIdx);
 }
 
 /* hex -> 색계열 그룹핑 (도넛 차트용) */

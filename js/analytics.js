@@ -466,8 +466,9 @@ function openFabricGallery(data, fabricKey, fabricText) {
         ? `<div class="imgph">${PH_SVG}<span>${esc(d.product_name)}</span></div>
            <img src="${esc(proxyImage(d.image_url))}" alt="${esc(d.product_name)}" loading="lazy"
                 referrerpolicy="no-referrer"
+                data-orig="${esc(d.image_url)}" data-tried="0"
                 onload="this.previousElementSibling.style.display='none'"
-                onerror="this.style.display='none'">`
+                onerror="imgFallback(this, this.dataset.orig)">`
         : `<div class="color-card-wrap">
              ${hexes.length ? hexes.map(h => `<div class="color-card-block" style="background:${esc(h)}"></div>`).join("") : `<div class="color-card-empty">${esc(d.product_name)}</div>`}
            </div>`;
