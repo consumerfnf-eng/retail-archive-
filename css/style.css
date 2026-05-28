@@ -1595,9 +1595,55 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   overflow-y: auto;
   padding: 20px 28px 28px;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 18px;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
 }
 .fab-gal-card {
   cursor: pointer;
+  display: flex;
+  flex-direction: column;
+}
+.fab-gal-card .imgbox {
+  aspect-ratio: 3 / 4;  /* 의류 사진은 세로가 더 길게 */
+  width: 100%;
+}
+.fab-gal-card .pinfo {
+  padding: 10px 12px 12px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.fab-gal-card .pbrand {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.fab-gal-card .pname {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.fab-gal-card .pcat {
+  font-size: 10.5px;
+  color: var(--ink-soft);
+  margin-top: 2px;
+}
+.fab-gal-card .pcolors {
+  display: flex;
+  gap: 3px;
+  margin-top: 4px;
+}
+.fab-gal-card .dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid rgba(0,0,0,0.05);
 }
