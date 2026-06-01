@@ -43,14 +43,14 @@ async function loadSingleSheet(sheetCfg, sheetIndex) {
     if (!productName) return;
 
     // season 처리: 시트에 season 컬럼 있으면 그 값, 없으면 defaultSeason
-    let season = get(cols.season) || sheetCfg.defaultSeason;
-    // "2025.09" → "2025-09" 형식으로 정규화
-    season = season.replace(/\./g, '-');
-    // "2025-9" 같은 경우 → "2025-09"
-    const seasonMatch = season.match(/^(\d{4})-(\d{1,2})$/);
-    if (seasonMatch) {
-      season = `${seasonMatch[1]}-${seasonMatch[2].padStart(2, '0')}`;
-    }
+let season = get(cols.season) || sheetCfg.defaultSeason;
+// 모든 구분자(. / 공백)를 - 로 통일 → "2025.09", "2026. 6. 1", "2026/06" 등 흡수
+season = season.replace(/[.\/\s]+/g, '-');
+// 문자열 어디서든 연·월(YYYY-M 또는 YYYY-MM)을 추출 (^ $ 앵커 제거가 핵심)
+const seasonMatch = season.match(/(\d{4})-(\d{1,2})/);
+if (seasonMatch) {
+  season = `${seasonMatch[1]}-${seasonMatch[2].padStart(2, '0')}`;
+}
 
     // 컬러 (있을 때만)
     const colorStr = get(cols.color);
