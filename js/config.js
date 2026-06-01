@@ -17,7 +17,7 @@ const CONFIG = {
       defaultCountry: 'GL',        // country 컬럼 없거나 빈값일 때 fallback
       // 컬럼 매핑 (시트마다 다를 수 있어서 명시)
       columns: {
-        season: 'b2',              // season 컬럼 없음
+        season: 'season',              // 
         country: null,             // country 컬럼 없음 → defaultCountry 사용
         brand: 'brand',
         gender: 'gender',
