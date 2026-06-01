@@ -21,7 +21,7 @@ const CONFIG = {
         country: null,             // country 컬럼 없음 → defaultCountry 사용
         brand: 'brand',
         gender: 'gender',
-        category: 'category1',     // 'category1' 사용
+        category: 'category',     // 'category' 사용
         product_name: 'product_name',
         color: 'color',
         hex: 'image_hex_color',
