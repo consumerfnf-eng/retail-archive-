@@ -13,11 +13,11 @@ const CONFIG = {
       id: '1iqyZhiZhEtKC3HKSI_bRFT_V8nxEy4HyaBTn5TOm644',
       gid: '0',
       label: '애슬레저',           // 카테고리 그룹 라벨
-      defaultSeason: '2025-12',    // season 컬럼 없을 때 fallback
+      defaultSeason: 'null',    // season 컬럼 없을 때 fallback
       defaultCountry: 'GL',        // country 컬럼 없거나 빈값일 때 fallback
       // 컬럼 매핑 (시트마다 다를 수 있어서 명시)
       columns: {
-        season: null,              // season 컬럼 없음
+        season: 'b2',              // season 컬럼 없음
         country: null,             // country 컬럼 없음 → defaultCountry 사용
         brand: 'brand',
         gender: 'gender',
@@ -54,7 +54,7 @@ const CONFIG = {
       id: '1VOOVTnp_T8YUqb_O06a_O02VNM3_jEJTLwIXfTEsKx0',
       gid: '0',
       label: '럭셔리',
-      defaultSeason: '2025-12',
+      defaultSeason: null,
       defaultCountry: 'GL',
       columns: {
         season: 'season',
