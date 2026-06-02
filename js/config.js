@@ -3,117 +3,31 @@
    설정값 모음 (시트 URL, 브랜드 그룹핑, Fabric 분류)
    ============================================ */
 
+// ============================================
+// 표준 컬럼 매핑 (CONFIG보다 먼저 와야 함!)
+// ============================================
+const DEFAULT_COLUMNS = {
+  season: 'season',
+  country: 'country',
+  brand: 'brand',
+  gender: 'gender',
+  category: 'category',
+  product_name: 'product_name',
+  color: 'color',
+  hex: 'image_hex_color',
+  image_url: 'image_url',
+  fabric: 'material',
+};
+
 const CONFIG = {
-  // ============================================
-  // 다중 Google Sheets 설정
-  // 새 시트 추가 시 SHEETS 배열에 객체 추가
-  // ============================================
   SHEETS: [
-    {
-      id: '1iqyZhiZhEtKC3HKSI_bRFT_V8nxEy4HyaBTn5TOm644',
-      gid: '0',
-      label: '애슬레저',           // 카테고리 그룹 라벨
-      defaultSeason: 'null',    // season 컬럼 없을 때 fallback
-      defaultCountry: 'GL',        // country 컬럼 없거나 빈값일 때 fallback
-      // 컬럼 매핑 (시트마다 다를 수 있어서 명시)
-      columns: {
-        season: 'season',              // 
-        country: null,             // country 컬럼 없음 → defaultCountry 사용
-        brand: 'brand',
-        gender: 'gender',
-        category: 'category',     // 'category' 사용
-        product_name: 'product_name',
-        color: 'color',
-        hex: 'image_hex_color',
-        image_url: 'image_url',
-        debug: 'debug',
-        fabric: 'fabric'           // J열
-      }
-    },
-    {
-      id: '1hRSkBD82TnzqusqH79qy-k0kSMGGqx5XbTk5dbnA1-A',
-      gid: '0',
-      label: '아웃도어·스포츠',
-      defaultSeason: '2025-09',
-      defaultCountry: 'GL',
-      columns: {
-        season: 'season',          // A열에 season
-        country: null,
-        brand: 'brand',
-        gender: 'gender',
-        category: 'category',
-        product_name: 'product_name',
-        color: null,               // color 컬럼 없음
-        hex: 'image_hex_color',
-        image_url: 'image_url',
-        debug: 'debug',
-        fabric: null               // fabric 비어있음 (나중에 추가)
-      }
-    },
-    {
-      id: '1VOOVTnp_T8YUqb_O06a_O02VNM3_jEJTLwIXfTEsKx0',
-      gid: '0',
-      label: '럭셔리',
-      defaultSeason: null,
-      defaultCountry: 'GL',
-      columns: {
-        season: 'season',
-        country: null,
-        brand: 'brand',
-        gender: 'gender',
-        category: 'category',
-        product_name: 'product_name',
-        color: 'color',
-        hex: 'image_hex_color',
-        image_url: 'image_url',
-        debug: 'debug',
-        fabric: 'material'         // 럭셔리 시트는 'material' 컬럼이 fabric
-      }
-    },
-    {
-      // 중국 컬러 트렌드 시트
-      // 모든 행 = CN, brandGroup은 브랜드별로 자동 분류됨 (BRAND_GROUP_MAP 참조)
-      id: '1tA9UpzRober_qfosSOv2hwkrq5d8hAG-jeEn8dY21RQ',
-      gid: '0',
-      label: '중국 컬러',           // brandGroup default (사실상 BRAND_GROUP_MAP이 우선)
-      defaultSeason: '2025-09',
-      defaultCountry: 'CN',         // 이 시트의 모든 행은 중국
-      columns: {
-        season: 'season',
-        country: null,              // country 컬럼 없음 → defaultCountry 사용
-        brand: 'brand',
-        gender: 'gender',
-        category: 'category',
-        product_name: 'product_name',
-        color: null,                // color 컬럼 없음
-        hex: 'image_hex_color',
-        image_url: 'image_url',     // 거의 비어있음 (사진 없음)
-        debug: 'debug',
-        fabric: null                // fabric 없음
-      }
-    },
-    {
-      // 25FW 국내 브랜드 시트 (한국)
-      // 모든 행 = KR, brandGroup은 '국내 브랜드'로 자동 분류
-      id: '1ie6e9jQAkauBdBssqCH1DuyZHcGLyb2KDTysFdHV3Vc',
-      gid: '0',
-      label: '국내 브랜드',
-      defaultSeason: '2025-12',
-      defaultCountry: 'KR',         // 한국 브랜드
-      columns: {
-        season: 'season',
-        country: null,
-        brand: 'brand',
-        gender: 'gender',
-        category: 'category',
-        product_name: 'product_name',
-        color: 'color',
-        hex: 'image_hex_color',
-        image_url: 'image_url',
-        debug: 'debug',
-        fabric: null                // 시트에 fabric 컬럼 아직 없음
-      }
-    }
+    { id: '1iqyZhiZhEtKC3HKSI_bRFT_V8nxEy4HyaBTn5TOm644', gid: '0', label: '애슬레저',        defaultCountry: 'GL', columns: DEFAULT_COLUMNS },
+    { id: '1hRSkBD82TnzqusqH79qy-k0kSMGGqx5XbTk5dbnA1-A', gid: '0', label: '아웃도어·스포츠', defaultCountry: 'GL', columns: DEFAULT_COLUMNS },
+    { id: '1VOOVTnp_T8YUqb_O06a_O02VNM3_jEJTLwIXfTEsKx0', gid: '0', label: '럭셔리',          defaultCountry: 'GL', columns: DEFAULT_COLUMNS },
+    { id: '1tA9UpzRober_qfosSOv2hwkrq5d8hAG-jeEn8dY21RQ', gid: '0', label: '중국 컬러',       defaultCountry: 'CN', columns: DEFAULT_COLUMNS },
+    { id: '1ie6e9jQAkauBdBssqCH1DuyZHcGLyb2KDTysFdHV3Vc', gid: '0', label: '국내 브랜드',     defaultCountry: 'KR', columns: DEFAULT_COLUMNS },
+  ],
+};
   ],
 
   // 시트 CSV export URL 생성
