@@ -41,7 +41,7 @@ const CONFIG = {
 // 브랜드 그룹 분류 (좌측 사이드바 표시 순서)
 // 시트의 label과 매칭 - 시트가 자동으로 그룹 결정
 // ============================================
-const BRAND_GROUP_ORDER = ["럭셔리", "컨템포러리", "애슬레저", "아웃도어·스포츠", "기타"];
+const BRAND_GROUP_ORDER = ["럭셔리", "GL 컨템포러리", "CN 컨템포러리", "KR 컨템포러리", "애슬레저", "아웃도어·스포츠", "CN 아웃도어·스포츠", "코트", "기타"];
 
 // ============================================
 // Country 코드 → 라벨 매핑
@@ -76,40 +76,76 @@ function countryLabel(code) {
 // 여기 명시된 브랜드는 시트 위치와 무관하게 강제 배정
 // 명시 안 된 브랜드는 시트의 label을 따름
 const BRAND_GROUP_MAP = {
-  // === 컨템포러리 (Contemporary Fashion) ===
-  "JNBY": "컨템포러리",
-  "MO&Co.": "컨템포러리",
-  "MO&Co": "컨템포러리",     // 점 없는 버전 대응
-  "Miss Sixty": "컨템포러리",
-  "Urban Revivo": "컨템포러리",
-  "Rosemoo": "컨템포러리",
-  "Uniqlo": "컨템포러리",
-  // 한국 브랜드들도 컨템포러리에 포함
-  "썸웨어버터": "컨템포러리",
+  // === KR 컨템포러리 ===
+  "론론": "KR 컨템포러리",
+  "파르티멘토 우먼": "KR 컨템포러리",
+  "튜드먼트": "KR 컨템포러리",
+  "더바넷": "KR 컨템포러리",
+  "던스트": "KR 컨템포러리",
+  "레이브": "KR 컨템포러리",
+  "르바": "KR 컨템포러리",
 
-  // === 애슬레저 (Athleisure / Sportswear) ===
-  "Adidas": "애슬레저",
+  // === CN 컨템포러리 ===
+  "Urban Revivo": "CN 컨템포러리",
+  "Rosemoo": "CN 컨템포러리",
+  "Miss Sixty": "CN 컨템포러리",
+  "MO&Co.": "CN 컨템포러리",
+  "MO&Co": "CN 컨템포러리",   // 점 없는 버전 대응
+  "JNBY": "CN 컨템포러리",
+  "Uniqlo": "CN 컨템포러리",
+
+  // === GL 컨템포러리 ===
+  "Ralph Lauren": "GL 컨템포러리",
+
+  // === 애슬레저 (ATH) ===
   "Lululemon": "애슬레저",
-  "Puma": "애슬레저",
-  "New Balance": "애슬레저",
-  "FILA": "애슬레저",
-  "Asics": "애슬레저",
-  "K-Swiss": "애슬레저",
-  "Bodywild": "애슬레저",
-  "Anta Sports": "애슬레저",
-  "Anta": "애슬레저",
-  "Ducati": "애슬레저",
-  "Balabala": "애슬레저",
+  "ALO YOGA": "애슬레저",
+  "Aritzia": "애슬레저",
+  "Skims": "애슬레저",
+  "Sporty and Rich": "애슬레저",
+  "Adanola": "애슬레저",
 
-  // === 아웃도어·스포츠 (Outdoor / Performance) ===
-  "Salomon": "아웃도어·스포츠",
-  "Goldwin": "아웃도어·스포츠",
-  "Kolon Sport": "아웃도어·스포츠",
-  "Columbia": "아웃도어·스포츠",
+  // === 아웃도어·스포츠 (SP) ===
+  "On": "아웃도어·스포츠",
+  "On Running": "아웃도어·스포츠",   // On과 동일 브랜드
+  "FILA": "아웃도어·스포츠",
+  "Adidas": "아웃도어·스포츠",
+  "Puma": "아웃도어·스포츠",
+  "Asics": "아웃도어·스포츠",
+  "New Balance": "아웃도어·스포츠",
   "The North Face": "아웃도어·스포츠",
-  "Kailas": "아웃도어·스포츠",
-  "Descente": "아웃도어·스포츠"
+  "Salomon": "아웃도어·스포츠",
+  "Sansan Gear": "아웃도어·스포츠",   // KR SP
+  "Nike": "아웃도어·스포츠",
+
+  // === CN 아웃도어·스포츠 (CN SP) ===
+  "Kolon Sport": "CN 아웃도어·스포츠",
+  "Kailas": "CN 아웃도어·스포츠",
+  "Columbia": "CN 아웃도어·스포츠",
+  "Goldwin": "CN 아웃도어·스포츠",
+  "Descente": "CN 아웃도어·스포츠",
+  "Anta Sports": "CN 아웃도어·스포츠",
+  "Anta": "CN 아웃도어·스포츠",
+  "Bodywild": "CN 아웃도어·스포츠",
+  "Balabala": "CN 아웃도어·스포츠",
+  "K-Swiss": "CN 아웃도어·스포츠",
+  "Ducati": "CN 아웃도어·스포츠",
+
+  // === 코트 (Court) ===
+  // 브랜드명에 (court) 포함된 경우 getBrandGroup()에서 자동 처리
+  "Lacoste": "코트",
 };
+
+/**
+ * 브랜드명 → 그룹 반환
+ * (court) 포함된 브랜드명은 자동으로 코트로 분류
+ * 명시 안 된 브랜드는 null 반환 → 시트 label 사용
+ */
+function getBrandGroup(brandName) {
+  if (!brandName) return null;
+  if (brandName.toLowerCase().includes("(court)")) return "코트";
+  return BRAND_GROUP_MAP[brandName] ?? null;
+}
 
 // ============================================
 // Fabric 카테고리 정의 (12개 그룹)
