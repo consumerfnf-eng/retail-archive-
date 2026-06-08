@@ -98,7 +98,8 @@ if (seasonMatch) {
     let country = normalizeCountry(get(cols.country)) || sheetCfg.defaultCountry || 'GL';
 
     // 브랜드 그룹: 명시적 매핑이 있으면 그걸 쓰고, 없으면 시트 라벨
-    const brandGroup = BRAND_GROUP_MAP[brand] || sheetCfg.label;
+    // getBrandGroup()은 (court) 포함 브랜드 자동 처리 포함
+    const brandGroup = getBrandGroup(brand) || sheetCfg.label;
 
     data.push({
       _id: `s${sheetIndex}-${i}`,
