@@ -97,9 +97,12 @@ if (seasonMatch) {
     // country: 시트에 country 컬럼 있으면 그 값, 없으면 sheetCfg.defaultCountry
     let country = normalizeCountry(get(cols.country)) || sheetCfg.defaultCountry || 'GL';
 
-    // 브랜드 그룹: 명시적 매핑이 있으면 그걸 쓰고, 없으면 시트 라벨
-    // getBrandGroup()은 (court) 포함 브랜드 자동 처리 포함
+    // 브랜드 그룹: (court) 자동처리 포함, 태그 제거 후 MAP 조회
     const brandGroup = getBrandGroup(brand) || sheetCfg.label;
+
+    // 브랜드명에 (CN)/(KR)/(EU) 태그 있으면 country 강제 오버라이드
+    const brandCountryTag = getBrandCountryTag(brand);
+    if (brandCountryTag) country = brandCountryTag;
 
     data.push({
       _id: `s${sheetIndex}-${i}`,
