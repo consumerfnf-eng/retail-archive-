@@ -41,7 +41,7 @@ const CONFIG = {
 // 브랜드 그룹 분류 (좌측 사이드바 표시 순서)
 // 시트의 label과 매칭 - 시트가 자동으로 그룹 결정
 // ============================================
-const BRAND_GROUP_ORDER = ["럭셔리", "GL 컨템포러리", "CN 컨템포러리", "KR 컨템포러리", "애슬레저", "아웃도어·스포츠", "CN 아웃도어·스포츠", "코트", "기타"];
+const BRAND_GROUP_ORDER = ["럭셔리", "컨템포러리", "애슬레저", "아웃도어·스포츠", "코트", "기타"];
 
 // ============================================
 // Country 코드 → 라벨 매핑
@@ -77,28 +77,28 @@ function countryLabel(code) {
 // 여기 명시된 브랜드는 시트 위치와 무관하게 강제 배정
 // 명시 안 된 브랜드는 시트의 label을 따름
 const BRAND_GROUP_MAP = {
-  // === KR 컨템포러리 ===
-  "론론": "KR 컨템포러리",
-  "파르티멘토 우먼": "KR 컨템포러리",
-  "튜드먼트": "KR 컨템포러리",
-  "더바넷": "KR 컨템포러리",
-  "던스트": "KR 컨템포러리",
-  "레이브": "KR 컨템포러리",
-  "르바": "KR 컨템포러리",
-  "썸웨어버터": "KR 컨템포러리",
-  "썸웨어 버터": "KR 컨템포러리",   // 띄어쓰기 버전 대응
+  // === KR 컨템포러리 (country: KR, 그룹: 컨템포러리) ===
+  "론론": "컨템포러리",
+  "파르티멘토 우먼": "컨템포러리",
+  "튜드먼트": "컨템포러리",
+  "더바넷": "컨템포러리",
+  "던스트": "컨템포러리",
+  "레이브": "컨템포러리",
+  "르바": "컨템포러리",
+  "썸웨어버터": "컨템포러리",
+  "썸웨어 버터": "컨템포러리",   // 띄어쓰기 버전 대응
 
-  // === CN 컨템포러리 ===
-  "Urban Revivo": "CN 컨템포러리",
-  "Rosemoo": "CN 컨템포러리",
-  "Miss Sixty": "CN 컨템포러리",
-  "MO&Co.": "CN 컨템포러리",
-  "MO&Co": "CN 컨템포러리",   // 점 없는 버전 대응
-  "JNBY": "CN 컨템포러리",
-  "Uniqlo": "CN 컨템포러리",
+  // === CN 컨템포러리 (country: CN, 그룹: 컨템포러리) ===
+  "Urban Revivo": "컨템포러리",
+  "Rosemoo": "컨템포러리",
+  "Miss Sixty": "컨템포러리",
+  "MO&Co.": "컨템포러리",
+  "MO&Co": "컨템포러리",   // 점 없는 버전 대응
+  "JNBY": "컨템포러리",
+  "Uniqlo": "컨템포러리",
 
-  // === GL 컨템포러리 ===
-  "Ralph Lauren": "GL 컨템포러리",
+  // === GL 컨템포러리 (country: GL, 그룹: 컨템포러리) ===
+  "Ralph Lauren": "컨템포러리",
 
   // === 애슬레저 (ATH) ===
   "Lululemon": "애슬레저",
@@ -121,18 +121,18 @@ const BRAND_GROUP_MAP = {
   "Sansan Gear": "아웃도어·스포츠",   // KR SP
   "Nike": "아웃도어·스포츠",
 
-  // === CN 아웃도어·스포츠 (CN SP) ===
-  "Kolon Sport": "CN 아웃도어·스포츠",
-  "Kailas": "CN 아웃도어·스포츠",
-  "Columbia": "CN 아웃도어·스포츠",
-  "Goldwin": "CN 아웃도어·스포츠",
-  "Descente": "CN 아웃도어·스포츠",
-  "Anta Sports": "CN 아웃도어·스포츠",
-  "Anta": "CN 아웃도어·스포츠",
-  "Bodywild": "CN 아웃도어·스포츠",
-  "Balabala": "CN 아웃도어·스포츠",
-  "K-Swiss": "CN 아웃도어·스포츠",
-  "Ducati": "CN 아웃도어·스포츠",
+  // === CN 아웃도어·스포츠 (CN SP) - country는 시트/태그로 구분, 그룹은 동일 ===
+  "Kolon Sport": "아웃도어·스포츠",
+  "Kailas": "아웃도어·스포츠",
+  "Columbia": "아웃도어·스포츠",
+  "Goldwin": "아웃도어·스포츠",
+  "Descente": "아웃도어·스포츠",
+  "Anta Sports": "아웃도어·스포츠",
+  "Anta": "아웃도어·스포츠",
+  "Bodywild": "아웃도어·스포츠",
+  "Balabala": "아웃도어·스포츠",
+  "K-Swiss": "아웃도어·스포츠",
+  "Ducati": "아웃도어·스포츠",
 
   // === 코트 (Court) ===
   // 브랜드명에 (court) 포함된 경우 getBrandGroup()에서 자동 처리
@@ -165,14 +165,32 @@ function getBrandCountryTag(brandName) {
 /**
  * 브랜드명 → 그룹 반환
  * (court) 포함된 브랜드명은 자동으로 코트로 분류
- * 태그 제거한 순수 브랜드명으로도 MAP 조회
+ * (CN)/(KR)/(EU) 태그 있으면 그룹도 해당 country 버전으로 자동 변환
  * 명시 안 된 브랜드는 null 반환 → 시트 label 사용
  */
 function getBrandGroup(brandName) {
   if (!brandName) return null;
   if (brandName.toLowerCase().includes("(court)")) return "코트";
+
   const clean = cleanBrandName(brandName);
-  return BRAND_GROUP_MAP[brandName] ?? BRAND_GROUP_MAP[clean] ?? null;
+  const countryTag = getBrandCountryTag(brandName);
+
+  // 기본 그룹 조회 (태그 있는 원본 → 없는 clean 순으로)
+  const baseGroup = BRAND_GROUP_MAP[brandName] ?? BRAND_GROUP_MAP[clean] ?? null;
+
+  // country 태그가 있으면 그룹 앞에 국가 prefix 붙여서 변환
+  // 예: "아웃도어·스포츠" + CN → "CN 아웃도어·스포츠"
+  //     "컨템포러리" + KR → "KR 컨템포러리"
+  // 단, 이미 prefix가 붙어있거나 애슬레저/코트/럭셔리는 변환 안 함
+  if (baseGroup && countryTag) {
+    const noPrefix = ["애슬레저", "코트", "럭셔리"];
+    const alreadyPrefixed = /^(GL|CN|KR|EU)\s/.test(baseGroup);
+    if (!noPrefix.includes(baseGroup) && !alreadyPrefixed) {
+      return `${countryTag} ${baseGroup}`;
+    }
+  }
+
+  return baseGroup;
 }
 
 // ============================================
