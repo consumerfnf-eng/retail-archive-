@@ -15,10 +15,11 @@ function download(filename, rows) {
 }
 
 function colorRows(data) {
-  const head = ["season","country","brand_group","brand","gender","category","subcategory","fabric","fabric_group","product_name",
+  const head = ["season","country","brand_group","court","brand","gender","category","subcategory","fabric","fabric_group","product_name",
                 "color_names","hex_codes","color_count","pct_in_image","image_url"];
   const rows = [head];
   data.forEach(d => {
+    const isCourt = d.brandGroup === "코트" ? "Y" : "";
     const hc = d.hex_colors || [];
     const cn = d.colors || [];
     let names = [], hexes = [], pcts = [];
@@ -41,6 +42,7 @@ function colorRows(data) {
       d.season || '',
       d.country || 'GL',
       d.brandGroup || '',
+      isCourt,
       d.brand,
       d.gender,
       d.category,
@@ -59,10 +61,11 @@ function colorRows(data) {
 }
 
 function productRows(data) {
-  const head = ["season","country","brand_group","brand","gender","category","subcategory","fabric","fabric_group","product_name",
+  const head = ["season","country","brand_group","court","brand","gender","category","subcategory","fabric","fabric_group","product_name",
                 "colors","hex_colors","top_hex","image_url"];
   const rows = [head];
   data.forEach(d => {
+    const isCourt = d.brandGroup === "코트" ? "Y" : "";
     const top = (d.hex_colors && d.hex_colors[0])
       ? d.hex_colors[0]
       : ((d.hex_breakdown && d.hex_breakdown[0]) ? d.hex_breakdown[0].hex : "");
@@ -70,6 +73,7 @@ function productRows(data) {
       d.season || '',
       d.country || 'GL',
       d.brandGroup || '',
+      isCourt,
       d.brand,
       d.gender,
       d.category,
@@ -88,18 +92,15 @@ function productRows(data) {
 
 /* ============================================
    Fabric CSV - 대표 소재별 실제 표현 분포
-   현재 분석화면의 카테고리 필터 적용
    ============================================ */
 function fabricDetailRows(data, selectedCategory) {
   const head = ["category_filter","fabric_group","fabric_group_color","fabric_text","product_count","pct_within_group","pct_total"];
   const rows = [head];
 
-  // 카테고리 필터 적용
   const filtered = (selectedCategory && selectedCategory !== "all")
     ? data.filter(d => d.category === selectedCategory)
     : data;
 
-  // 분류된 제품만
   const classified = filtered.filter(d => d.fabricKey);
   const grandTotal = classified.length;
 
@@ -108,7 +109,6 @@ function fabricDetailRows(data, selectedCategory) {
     return rows;
   }
 
-  // fabricKey × fabricText 집계
   const matrix = {};
   classified.forEach(d => {
     const fk = d.fabricKey;
@@ -117,12 +117,10 @@ function fabricDetailRows(data, selectedCategory) {
     matrix[fk][ft] = (matrix[fk][ft] || 0) + 1;
   });
 
-  // FABRIC_CATEGORIES 순서대로 정렬
   FABRIC_CATEGORIES.forEach(f => {
     if (!matrix[f.key]) return;
     const groupTotal = Object.values(matrix[f.key]).reduce((s, c) => s + c, 0);
-    const items = Object.entries(matrix[f.key])
-      .sort((a, b) => b[1] - a[1]);
+    const items = Object.entries(matrix[f.key]).sort((a, b) => b[1] - a[1]);
     items.forEach(([ft, count]) => {
       rows.push([
         selectedCategory || "all",
@@ -141,12 +139,10 @@ function fabricDetailRows(data, selectedCategory) {
 
 /* ============================================
    Fabric CSV - 카테고리 × 대표소재 매트릭스
-   (전체 카테고리, 분석용 피벗 데이터)
    ============================================ */
 function fabricMatrixRows(data) {
   const filtered = data.filter(d => d.fabricKey);
 
-  // 모든 카테고리
   const allCats = uniq(filtered.map(d => d.category || "—")).filter(c => c !== "—");
   const catOrder = ["outerwear","top","bottom","dress","shoe","shoes","bag","acc"];
   allCats.sort((a, b) => {
@@ -157,15 +153,12 @@ function fabricMatrixRows(data) {
     return a.localeCompare(b);
   });
 
-  // 헤더: fabric_group, 각 카테고리별 컬럼, 총합
   const head = ["fabric_group", ...allCats, "total"];
   const rows = [head];
 
-  // 카테고리별 총합 (마지막 행용)
   const catTotals = {};
   allCats.forEach(c => catTotals[c] = 0);
 
-  // 각 fabricKey별 행 생성
   FABRIC_CATEGORIES.forEach(f => {
     const counts = filtered.filter(d => d.fabricKey === f.key);
     if (counts.length === 0) return;
@@ -182,7 +175,6 @@ function fabricMatrixRows(data) {
     rows.push(row);
   });
 
-  // 합계 행
   const totalRow = ["TOTAL"];
   let grandTotal = 0;
   allCats.forEach(c => {
