@@ -101,21 +101,9 @@ if (seasonMatch) {
     const brandCountryTag = getBrandCountryTag(brand);
     if (brandCountryTag) country = brandCountryTag;
 
-    // 브랜드 그룹 결정:
-    // 1. MAP에 명시된 그룹 우선
-    // 2. 없으면 시트 label 사용
-    // 3. 시트가 CN/KR 전용 시트이고, 그룹에 이미 prefix 없으면 자동으로 prefix 붙임
-    //    예: 중국 시트의 FILA → "아웃도어·스포츠" → "CN 아웃도어·스포츠"
-    //    단, 애슬레저·코트·럭셔리는 국가 구분 없이 유지
-    const NO_PREFIX_GROUPS = ["애슬레저", "코트", "럭셔리"];
-    let brandGroup = getBrandGroup(brand) || sheetCfg.label;
-    const sheetCountry = sheetCfg.defaultCountry; // CN / KR / GL
-    if (sheetCountry && sheetCountry !== 'GL') {
-      const alreadyPrefixed = /^(GL|CN|KR|EU)\s/.test(brandGroup);
-      if (!alreadyPrefixed && !NO_PREFIX_GROUPS.includes(brandGroup)) {
-        brandGroup = `${sheetCountry} ${brandGroup}`;
-      }
-    }
+    // 브랜드 그룹: MAP 명시 우선, 없으면 시트 label
+    // country prefix 없이 단순하게 유지 (Country 필터로 구분)
+    const brandGroup = getBrandGroup(brand) || sheetCfg.label;
 
     data.push({
       _id: `s${sheetIndex}-${i}`,
