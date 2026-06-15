@@ -77,7 +77,6 @@ function facetCounts(scope, key) {
       return b[1] - a[1];
     }
     if (key === "brandGroup") {
-      // BRAND_GROUP_ORDER 순서 우선
       const ai = BRAND_GROUP_ORDER.indexOf(a[0]);
       const bi = BRAND_GROUP_ORDER.indexOf(b[0]);
       if (ai !== -1 && bi !== -1) return ai - bi;
@@ -86,7 +85,6 @@ function facetCounts(scope, key) {
       return b[1] - a[1];
     }
     if (key === "country") {
-      // COUNTRY_ORDER 순서대로 (GL, CN, KR)
       const ai = COUNTRY_ORDER.indexOf(a[0]);
       const bi = COUNTRY_ORDER.indexOf(b[0]);
       if (ai !== -1 && bi !== -1) return ai - bi;
@@ -114,14 +112,20 @@ function fabricCounts(scope) {
 
 function buildFacets() {
   const scope = genderScope();
+
+  // Country 필터가 선택된 경우 BrandGroups/Brands scope를 줄임
+  const countryFilteredScope = state.countries.size
+    ? scope.filter(d => state.countries.has(d.country || "GL"))
+    : scope;
+
   const defs = [
-    {id:"Period",       title:"Period · 시즌",       key:"month",       set:state.months,        fmt:monthLabel},
-    {id:"Country",      title:"Country · 국가",      key:"country",     set:state.countries,     fmt:countryLabel},
-    {id:"BrandGroups",  title:"Category · 카테고리", key:"brandGroup",  set:state.brandGroups},
-    {id:"Brands",       title:"Brands",              key:"brand",       set:state.brands},
-    {id:"Categories",   title:"Item Categories",     key:"category",    set:state.categories},
-    {id:"Subcategories",title:"Sub-categories",      key:"subcategory", set:state.subcategories},
-    {id:"Fabric",       title:"Fabric · 소재",       key:"fabric",      set:state.fabrics}
+    {id:"Period",       title:"Period · 시즌",       key:"month",       set:state.months,        fmt:monthLabel,   scope: scope},
+    {id:"Country",      title:"Country · 국가",      key:"country",     set:state.countries,     fmt:countryLabel, scope: scope},
+    {id:"BrandGroups",  title:"Category · 카테고리", key:"brandGroup",  set:state.brandGroups,                     scope: countryFilteredScope},
+    {id:"Brands",       title:"Brands",              key:"brand",       set:state.brands,                          scope: countryFilteredScope},
+    {id:"Categories",   title:"Item Categories",     key:"category",    set:state.categories,                      scope: scope},
+    {id:"Subcategories",title:"Sub-categories",      key:"subcategory", set:state.subcategories,                   scope: scope},
+    {id:"Fabric",       title:"Fabric · 소재",       key:"fabric",      set:state.fabrics,                         scope: scope}
   ];
 
   $("#facets").innerHTML = defs.map(def => {
@@ -129,11 +133,10 @@ function buildFacets() {
     let body;
 
     if (def.id === "Brands") {
-      // 2단계: 브랜드 그룹 → 개별 브랜드
-      // 단, 사용자가 BrandGroups에서 선택한 게 있으면 그것만 표시
+      // Country 필터 적용된 scope 사용
       const brandScope = state.brandGroups.size
-        ? scope.filter(d => state.brandGroups.has(d.brandGroup))
-        : scope;
+        ? def.scope.filter(d => state.brandGroups.has(d.brandGroup))
+        : def.scope;
 
       const counts = facetCounts(brandScope, def.key);
       const cmap = new Map(counts.filter(([v]) => v !== "—"));
@@ -143,7 +146,6 @@ function buildFacets() {
         (byGroup[g] = byGroup[g] || new Set()).add(d.brand);
       });
       const groups = BRAND_GROUP_ORDER.filter(g => byGroup[g] && byGroup[g].size);
-      // BRAND_GROUP_ORDER에 없는 그룹도 뒤에 추가
       Object.keys(byGroup).forEach(g => {
         if (!groups.includes(g) && byGroup[g].size) groups.push(g);
       });
@@ -180,8 +182,6 @@ function buildFacets() {
       }).join("");
 
     } else if (def.id === "Fabric") {
-      // Fabric은 체크박스 목록 대신 "All" 단일 항목만 표시
-      // 분석은 메인 도표에서 이루어짐
       const totalCount = scope.filter(d => d.fabricKey).length;
       body = `<div class="opt fabric-all-link" data-fabric-all="1">
         <span class="lbl" style="display:flex;align-items:center;gap:6px;font-weight:600">
@@ -192,8 +192,8 @@ function buildFacets() {
       </div>`;
 
     } else {
-      // 일반 facet (Period, BrandGroups, Categories, Subcategories)
-      const counts = facetCounts(scope, def.key);
+      // 일반 facet - 각 def.scope 사용
+      const counts = facetCounts(def.scope, def.key);
       const hasData = counts.some(([v]) => v !== "—");
       const opts = counts.map(([v, c]) => {
         const on = def.set.has(v);
@@ -225,11 +225,9 @@ function buildFacets() {
   });
 
   $$(".opt").forEach(o => o.onclick = () => {
-    // Fabric "All" 링크 → 메인 화면을 분석 도표로
     if (o.dataset.fabricAll) {
       state.view = "analytics";
       renderContent();
-      // 분석 화면으로 부드럽게 스크롤
       setTimeout(() => {
         const mainEl = $(".main");
         if (mainEl) mainEl.scrollTo({top: 0, behavior: "smooth"});
@@ -248,15 +246,26 @@ function buildFacets() {
       Subcategories: state.subcategories,
       Fabric: state.fabrics
     })[fid];
-    if (!set) return;  // fabric-all 등 set 없는 경우 보호
+    if (!set) return;
     if (set.has(val)) set.delete(val); else set.add(val);
 
     // BrandGroups 변경 시, 그 그룹에 속하지 않는 brand들은 선택 해제
     if (fid === 'BrandGroups' && state.brandGroups.size) {
       const validBrands = new Set();
-      genderScope().forEach(d => {
+      countryFilteredScope.forEach(d => {
         if (state.brandGroups.has(d.brandGroup)) validBrands.add(d.brand);
       });
+      state.brands = new Set([...state.brands].filter(b => validBrands.has(b)));
+    }
+
+    // Country 변경 시, 해당 country에 없는 brandGroups/brands 선택 해제
+    if (fid === 'Country') {
+      const newCountryScope = state.countries.size
+        ? genderScope().filter(d => state.countries.has(d.country || "GL"))
+        : genderScope();
+      const validGroups = new Set(newCountryScope.map(d => d.brandGroup));
+      const validBrands = new Set(newCountryScope.map(d => d.brand));
+      state.brandGroups = new Set([...state.brandGroups].filter(g => validGroups.has(g)));
       state.brands = new Set([...state.brands].filter(b => validBrands.has(b)));
     }
 
@@ -282,8 +291,8 @@ function buildFacets() {
     e.stopPropagation();
     const groupName = chk.dataset.bgcheck;
     const scope2 = state.brandGroups.size
-      ? genderScope().filter(d => state.brandGroups.has(d.brandGroup))
-      : genderScope();
+      ? countryFilteredScope.filter(d => state.brandGroups.has(d.brandGroup))
+      : countryFilteredScope;
     const brandsInGroup = new Set();
     scope2.forEach(d => {
       if ((d.brandGroup || "기타") === groupName) {
