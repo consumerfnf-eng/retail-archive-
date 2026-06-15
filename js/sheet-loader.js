@@ -94,12 +94,17 @@ if (seasonMatch) {
     // image_url
     const imageUrl = get(cols.image_url);
 
-    // country: 시트에 country 컬럼 있으면 그 값, 없으면 sheetCfg.defaultCountry
-    let country = normalizeCountry(get(cols.country)) || sheetCfg.defaultCountry || 'GL';
-
-    // 브랜드명에 (CN)/(KR)/(EU) 태그 있으면 country 강제 오버라이드
+    // country 결정 순서:
+    // 1. 브랜드명 태그 (EU)/(CN)/(KR) 최우선
+    // 2. 시트 country 컬럼 값
+    // 3. 시트 defaultCountry
     const brandCountryTag = getBrandCountryTag(brand);
-    if (brandCountryTag) country = brandCountryTag;
+    let country;
+    if (brandCountryTag) {
+      country = brandCountryTag;
+    } else {
+      country = normalizeCountry(get(cols.country)) || sheetCfg.defaultCountry || 'GL';
+    }
 
     // 브랜드 그룹: MAP 명시 우선, 없으면 시트 label
     // country prefix 없이 단순하게 유지 (Country 필터로 구분)
