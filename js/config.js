@@ -122,6 +122,7 @@ const BRAND_GROUP_MAP = {
   // === 코트 ===
   // (court) 포함 브랜드명은 getBrandGroup()에서 자동 처리
   "Lacoste": "코트",
+  "Wilson": "코트",
 };
 
 /**
