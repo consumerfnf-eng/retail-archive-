@@ -11,12 +11,12 @@ const esc = s => String(s == null ? "" : s)
   .replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
 const monthLabel = m => {
-  if (!m || !m.includes("-")) return m || "";
-  const [y, mm] = m.split("-");
-  const names = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  const idx = parseInt(mm, 10) - 1;
-  if (idx < 0 || idx > 11) return m;
-  return names[idx] + " " + y;
+     if (!m || !m.includes("-")) return m || "";
+     const [y, mm] = m.split("-");
+     const month = parseInt(mm, 10);
+     if (month < 1 || month > 12) return m;
+     const q = Math.ceil(month / 3);
+     return y + " " + q + "Q";
 };
 
 const PH_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>';
