@@ -13,7 +13,7 @@ function genderScope() {
 function filtered() {
   // 사이드바 필터 적용 - 갤러리용
   return genderScope().filter(d =>
-          (!state.months.size        || state.months.has(monthLabel(d.month))) &&
+          (!state.months.size        || state.months.has(monthLabel(d.month))) &&h
     (!state.countries.size    || state.countries.has(d.country || "GL")) &&
     (!state.brandGroups.size  || state.brandGroups.has(d.brandGroup)) &&
     (!state.brands.size       || state.brands.has(d.brand)) &&
@@ -27,7 +27,7 @@ function filtered() {
    분석 화면 전용 필터
    사이드바와 독립, state.analyticsFilter에서만 가져옴
    ============================================ */
-function analyticsFiltered() {
+function analyticsFiltered() {h
   const af = state.analyticsFilter;
   return genderScope().filter(d =>
           (!af.months.size           || af.months.has(monthLabel(d.month))) &&
@@ -112,20 +112,21 @@ function fabricCounts(scope) {
 
 function buildFacets() {
   const scope = genderScope();
+     const periodFilteredScope = state.months.size ? scope.filter(d => state.months.has(monthLabel(d.month))) : scope;
 
   // Country 필터가 선택된 경우 BrandGroups/Brands scope를 줄임
   const countryFilteredScope = state.countries.size
-    ? scope.filter(d => state.countries.has(d.country || "GL"))
-    : scope;
+        ? periodFilteredScope.filter(d => state.countries.has(d.country || "GL"))
+        : periodFilteredScope;
 
   const defs = [
     {id:"Period",       title:"Period · 시즌",       key:"month",       set:state.months,        fmt:monthLabel,   scope: scope},
-    {id:"Country",      title:"Country · 국가",      key:"country",     set:state.countries,     fmt:countryLabel, scope: scope},
+    {id:"Country",      title:"Country · 국가",      key:"country",     set:state.countries,     fmt:countryLabel, scope: periodFilteredScope},
     {id:"BrandGroups",  title:"Category · 카테고리", key:"brandGroup",  set:state.brandGroups,                     scope: countryFilteredScope},
     {id:"Brands",       title:"Brands",              key:"brand",       set:state.brands,                          scope: countryFilteredScope},
-    {id:"Categories",   title:"Item Categories",     key:"category",    set:state.categories,                      scope: scope},
-    {id:"Subcategories",title:"Sub-categories",      key:"subcategory", set:state.subcategories,                   scope: scope},
-    {id:"Fabric",       title:"Fabric · 소재",       key:"fabric",      set:state.fabrics,                         scope: scope}
+    {id:"Categories",   title:"Item Categories",     key:"category",    set:state.categories,                      scope: periodFilteredScope},
+    {id:"Subcategories",title:"Sub-categories",      key:"subcategory", set:state.subcategories,                   scope: periodFilteredScope},
+    {id:"Fabric",       title:"Fabric · 소재",       key:"fabric",      set:state.fabrics,                         scope: periodFilteredScope}
   ];
 
   $("#facets").innerHTML = defs.map(def => {
@@ -173,16 +174,16 @@ function buildFacets() {
           <div class="bgroup-top">
             <span class="bg-check ${checkClass}" data-bgcheck="${esc(g)}" title="그룹 전체 선택"></span>
             <span class="bgcaret" data-bgtoggle="${esc(g)}"></span>
-            <span class="lbl" data-bgtoggle="${esc(g)}">${esc(g)}</span>
+            <span class="lbl" data-bgtoggle="${esc(g)}">${esc(g)}</span>h
             ${gsel?`<span class="fcount">${gsel}</span>`:''}
             <span class="cnt">${gcount}</span>
           </div>
-          <div class="bgroup-body">${children}</div>
+          <div class="bgroup-body">${children}</div>h
         </div>`;
       }).join("");
 
     } else if (def.id === "Fabric") {
-      const totalCount = scope.filter(d => d.fabricKey).length;
+      const totalCount = periodFilteredScope.filter(d => d.fabricKey).length;
       body = `<div class="opt fabric-all-link" data-fabric-all="1">
         <span class="lbl" style="display:flex;align-items:center;gap:6px;font-weight:600">
           <span style="width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0"></span>
