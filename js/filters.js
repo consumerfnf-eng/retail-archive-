@@ -13,7 +13,7 @@ function genderScope() {
 function filtered() {
   // 사이드바 필터 적용 - 갤러리용
   return genderScope().filter(d =>
-          (!state.months.size        || state.months.has(monthLabel(d.month))) &&h
+          (!state.months.size        || state.months.has(monthLabel(d.month))) &&
     (!state.countries.size    || state.countries.has(d.country || "GL")) &&
     (!state.brandGroups.size  || state.brandGroups.has(d.brandGroup)) &&
     (!state.brands.size       || state.brands.has(d.brand)) &&
@@ -27,7 +27,7 @@ function filtered() {
    분석 화면 전용 필터
    사이드바와 독립, state.analyticsFilter에서만 가져옴
    ============================================ */
-function analyticsFiltered() {h
+function analyticsFiltered() {
   const af = state.analyticsFilter;
   return genderScope().filter(d =>
           (!af.months.size           || af.months.has(monthLabel(d.month))) &&
@@ -174,11 +174,11 @@ function buildFacets() {
           <div class="bgroup-top">
             <span class="bg-check ${checkClass}" data-bgcheck="${esc(g)}" title="그룹 전체 선택"></span>
             <span class="bgcaret" data-bgtoggle="${esc(g)}"></span>
-            <span class="lbl" data-bgtoggle="${esc(g)}">${esc(g)}</span>h
+            <span class="lbl" data-bgtoggle="${esc(g)}">${esc(g)}</span>
             ${gsel?`<span class="fcount">${gsel}</span>`:''}
             <span class="cnt">${gcount}</span>
           </div>
-          <div class="bgroup-body">${children}</div>h
+          <div class="bgroup-body">${children}</div>
         </div>`;
       }).join("");
 
