@@ -13,7 +13,7 @@ function genderScope() {
 function filtered() {
   // 사이드바 필터 적용 - 갤러리용
   return genderScope().filter(d =>
-    (!state.months.size       || state.months.has(d.month)) &&
+          (!state.months.size        || state.months.has(monthLabel(d.month))) &&
     (!state.countries.size    || state.countries.has(d.country || "GL")) &&
     (!state.brandGroups.size  || state.brandGroups.has(d.brandGroup)) &&
     (!state.brands.size       || state.brands.has(d.brand)) &&
@@ -30,7 +30,7 @@ function filtered() {
 function analyticsFiltered() {
   const af = state.analyticsFilter;
   return genderScope().filter(d =>
-    (!af.months.size       || af.months.has(d.month)) &&
+          (!af.months.size           || af.months.has(monthLabel(d.month))) &&
     (!af.countries.size    || af.countries.has(d.country || "GL")) &&
     (!af.brandGroups.size  || af.brandGroups.has(d.brandGroup)) &&
     (!af.brands.size       || af.brands.has(d.brand))
@@ -62,7 +62,7 @@ function buildGenderTabs() {
 function facetCounts(scope, key) {
   const m = {};
   scope.forEach(d => {
-    const v = d[key] || "—";
+          const v = key === "month" ? (monthLabel(d[key]) || "—") : (d[key] || "—");
     m[v] = (m[v] || 0) + 1;
   });
   return Object.entries(m).sort((a,b) => {
