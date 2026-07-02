@@ -13,6 +13,7 @@ const cnActive = () => state.countries.has('CN');
 
 function renderGallery(data) {
   // CN 국가 미포함이면 원래 갤러리 그대로
+  data.forEach((d, i) => { d._idx = i; }); // 원래 인덱스 보존
   if (!cnActive()) return renderPlainGallery(data);
 
   const cutData   = data.filter(isCutRow);
@@ -60,7 +61,7 @@ function renderPlainGallery(data, opts) {
          ${hexes.length ? hexes.map(h => `<div class="color-card-block" style="background:${esc(h)}"></div>`).join("") : `<div class="color-card-empty">${esc(d.product_name)}</div>`}
          </div>`;
 
-    return `<div class="pcard" data-idx="${gi}">
+    return `<div class="pcard" data-idx="${d._idx !== undefined ? d._idx : gi}">
       <div class="imgbox ${hasImage ? '' : 'no-img'}">
         <button class="card-x" data-rm="${d._id}" title="잘못 분류된 제품 — 제거">×</button>
         ${imgContent}
