@@ -82,7 +82,6 @@ const BRAND_GROUP_MAP = {
   "Rosemoo": "컨템포러리",
   "Miss Sixty": "컨템포러리",
   "MO&Co.": "컨템포러리",
-  "MO&Co": "컨템포러리",
   "JNBY": "컨템포러리",
   "Uniqlo": "컨템포러리",
   "Ralph Lauren": "컨템포러리",
