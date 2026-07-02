@@ -9,10 +9,10 @@ const hasImg      = d => !!(d.image_url && d.image_url.trim());
 const isCutBrand  = d => PRODUCT_CUT_BRANDS.includes(d.brand);
 const isCutRow    = d => d.country === 'CN' && isCutBrand(d) && hasImg(d);
 const isColorRow  = d => d.country === 'CN';
-const cnActive    = () => state.countries.size === 1 && state.countries.has('CN');
+const cnActive = () => state.countries.has('CN');
 
 function renderGallery(data) {
-  // China 단독 필터가 아니면 원래 갤러리 그대로
+  // CN 국가 미포함이면 원래 갤러리 그대로
   if (!cnActive()) return renderPlainGallery(data);
 
   const tab       = state.cnTab === 'color' ? 'color' : 'cut';
