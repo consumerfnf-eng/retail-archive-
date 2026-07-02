@@ -14,7 +14,10 @@ function download(filename, rows) {
   showToast(filename + " 저장됨 (" + (rows.length - 1) + "행)");
 }
 
-function colorRows(data) {
+function colorRows(data, accFilter) {
+   const ACC_CATS = ["acc", "bag", "shoe"];
+   if (accFilter === "no-acc") data = data.filter(d => !ACC_CATS.includes(d.category));
+   else if (accFilter === "acc-only") data = data.filter(d => ACC_CATS.includes(d.category));
   const head = ["season","country","brand_group","court","brand","gender","category","subcategory","fabric","fabric_group","product_name",
                 "color_names","hex_codes","color_count","pct_in_image","image_url"];
   const rows = [head];
