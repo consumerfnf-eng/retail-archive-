@@ -7,7 +7,7 @@
 const PRODUCT_CUT_BRANDS = ["JNBY", "MO&Co.", "Urban Revivo"];
 const hasImg      = d => !!(d.image_url && d.image_url.trim());
 const isCutBrand  = d => PRODUCT_CUT_BRANDS.includes(d.brand);
-const isCutRow    = d => d.country === 'CN' && hasImg(d);
+const isCutRow    = d => d.country === 'CN' && isCutBrand(d) && hasImg(d);
 const isColorRow  = d => d.country === 'CN';
 const cnActive    = () => state.countries.size === 1 && state.countries.has('CN');
 
