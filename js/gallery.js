@@ -40,7 +40,6 @@ function renderGallery(data) {
         <div class="pcolors">${(d.hex_colors || []).slice(0,7).map(h =>
           `<span class="dot" style="background:${esc(h)}"></span>`).join("")}</div>
       </div>
-              </div>
     </div>`;
   }).join("");
 
