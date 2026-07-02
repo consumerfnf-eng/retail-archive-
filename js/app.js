@@ -45,9 +45,15 @@ function renderContent() {
   if (state.view === "gallery") {
     // 카드 클릭 → 모달
     $$(".pcard").forEach(c => c.onclick = () => openModal(data[+c.dataset.idx]));
+     // China 제품캷 / 컴러 아카이브 탭 전환
+     $$(".cn-tab").forEach(t => t.onclick = () => {
+        state.cnTab = t.dataset.cntab === "color" ? "color" : "cut";
+        state.page = 1;
+        renderContent();
+     });
     // X 버튼 → 제거
     $$(".card-x").forEach(b => b.onclick = (e) => {
-      e.stopPropagation();
+       e.stopPropagation();
       removed.add(b.dataset.rm);
       render();
     });
@@ -118,8 +124,19 @@ function bindGlobalEvents() {
   // CSV 다운로드
   $("#csvColorFiltered").onclick = () =>
     download(`color_raw_filtered_${stamp()}.csv`, colorRows(filtered()));
-  $("#csvColorAll").onclick = () =>
-    download(`color_raw_all_${stamp()}.csv`, colorRows(RETAIL_DATA.filter(d => !removed.has(d._id))));
+  const colorAllWrap = $("#csvColorAllWrap");
+   if (colorAllWrap) {
+      const toggle = $("#csvColorAllBtn");
+      if (toggle) toggle.onclick = (e) => { e.stopPropagation(); colorAllWrap.classList.toggle("open"); };
+      document.addEventListener("click", () => colorAllWrap.classList.remove("open"));
+      $$("#csvColorAllWrap .csv-dd-item").forEach(it => it.onclick = () => {
+         const scope = it.dataset.scope || "all";
+         const base = RETAIL_DATA.filter(d => !removed.has(d._id));
+         const suffix = scope === "no-acc" ? "no_acc" : (scope === "acc-only" ? "acc_only" : "all");
+         download(`color_raw_${suffix}_${stamp()}.csv`, colorRows(base, scope));
+         colorAllWrap.classList.remove("open");
+      });
+   }
   $("#csvProducts").onclick = () =>
     download(`products_${stamp()}.csv`, productRows(filtered()));
 
