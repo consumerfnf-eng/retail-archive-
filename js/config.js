@@ -24,6 +24,7 @@ const CONFIG = {
     { id: '1iqyZhiZhEtKC3HKSI_bRFT_V8nxEy4HyaBTn5TOm644', gid: '0', label: '애슬레저',        defaultCountry: 'GL', columns: DEFAULT_COLUMNS },
     { id: '1hRSkBD82TnzqusqH79qy-k0kSMGGqx5XbTk5dbnA1-A', gid: '0', label: '아웃도어·스포츠', defaultCountry: 'GL', columns: DEFAULT_COLUMNS },
     { id: '1VOOVTnp_T8YUqb_O06a_O02VNM3_jEJTLwIXfTEsKx0', gid: '0', label: '럭셔리',          defaultCountry: 'GL', columns: DEFAULT_COLUMNS },
+    { id: '1tA9UpzRober_qfosSOv2hwkrq5d8hAG-jeEn8dY21RQ', gid: '0', label: '아웃도어·스포츠', defaultCountry: 'CN', columns: DEFAULT_COLUMNS },
     { id: '1ie6e9jQAkauBdBssqCH1DuyZHcGLyb2KDTysFdHV3Vc', gid: '0', label: '국내 브랜드',     defaultCountry: 'KR', columns: DEFAULT_COLUMNS },
     ],
 
