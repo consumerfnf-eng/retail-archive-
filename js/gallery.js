@@ -4,7 +4,7 @@
    ============================================ */
 
 /* ===== China 제품컷 / 컬러 아카이브 분류 ===== */
-const PRODUCT_CUT_BRANDS = ["JNBY", "MO&Co.", "Urban Revivo"];
+const PRODUCT_CUT_BRANDS = ["JNBY", "MO&Co.", "Urban Revivo", "Beneunder"];
 const hasImg      = d => !!(d.image_url && d.image_url.trim());
 const isCutBrand  = d => PRODUCT_CUT_BRANDS.includes(d.brand);
 const isCutRow    = d => d.country === 'CN' && isCutBrand(d) && hasImg(d);
