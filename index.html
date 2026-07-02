@@ -49,7 +49,14 @@
         <div class="csv-group">
           <button id="csvProducts" class="csv-btn">제품 CSV</button>
           <button id="csvColorFiltered" class="csv-btn">컬러(필터) CSV</button>
-          <button id="csvColorAll" class="csv-btn">컬러(전체) CSV</button>
+          <div id="csvColorAllWrap" class="csv-dd-wrap">
+            <button id="csvColorAllBtn" class="csv-btn">컴러(전체) CSV ▾</button>
+            <div class="csv-dd-menu">
+              <button class="csv-dd-item" data-scope="all">컴러 (전체)</button>
+              <button class="csv-dd-item" data-scope="no-acc">컴러 (acc 제외)</button>
+              <button class="csv-dd-item" data-scope="acc-only">컴러 (acc만)</button>
+            </div>
+          </div>
           <button id="csvFabricDetail" class="csv-btn">소재 상세 CSV</button>
           <button id="csvFabricMatrix" class="csv-btn">소재 피벗 CSV</button>
         </div>
