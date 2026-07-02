@@ -30,7 +30,6 @@ function renderGallery(data) {
 
     return `<div class="pcard" data-idx="${gi}">
       <div class="imgbox ${hasImage ? '' : 'no-img'}">
-        <span class="mtag">${monthLabel(d.month)}</span>
         ${d.country && d.country !== 'GL' ? `<span class="ctag">${esc(d.country)}</span>` : ''}
         <button class="card-x" data-rm="${d._id}" title="잘못 분류된 제품 — 제거">×</button>
         ${imgContent}
