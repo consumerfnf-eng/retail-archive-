@@ -89,7 +89,7 @@ const BRAND_GROUP_MAP = {
 
   // === 애슬레저 ===
   "Lululemon": "애슬레저",
-  "ALO YOGA": "애슬레저",
+  "Alo": "애슬레저",
   "Aritzia": "애슬레저",
   "Skims": "애슬레저",
   "Sporty and Rich": "애슬레저",
@@ -97,8 +97,7 @@ const BRAND_GROUP_MAP = {
 
   // === 아웃도어·스포츠 ===
   "On": "아웃도어·스포츠",
-  "On Running": "아웃도어·스포츠",
-  "FILA": "아웃도어·스포츠",
+  "Fila": "아웃도어·스포츠",
   "Adidas": "아웃도어·스포츠",
   "Puma": "아웃도어·스포츠",
   "Asics": "아웃도어·스포츠",
