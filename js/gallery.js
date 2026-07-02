@@ -33,12 +33,14 @@ function renderGallery(data) {
         <button class="card-x" data-rm="${d._id}" title="잘못 분류된 제품 — 제거">×</button>
         ${imgContent}
       </div>
+                <div class="pinfo">
         <div class="pbrand">${esc(d.brand)} · ${esc(d.gender)}</div>
         <div class="pname">${esc(d.product_name)}</div>
         <div class="pcat">${esc(d.category)}${d.subcategory && d.subcategory!=='—' ? ' · ' + esc(d.subcategory) : ''}</div>
         <div class="pcolors">${(d.hex_colors || []).slice(0,7).map(h =>
           `<span class="dot" style="background:${esc(h)}"></span>`).join("")}</div>
       </div>
+              </div>
     </div>`;
   }).join("");
 
