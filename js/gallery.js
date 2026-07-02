@@ -15,10 +15,10 @@ function renderGallery(data) {
   // CN 국가 미포함이면 원래 갤러리 그대로
   if (!cnActive()) return renderPlainGallery(data);
 
-  const tab       = state.cnTab === 'color' ? 'color' : 'cut';
   const cutData   = data.filter(isCutRow);
   const colorData = data.filter(isColorRow);
   const missing   = data.filter(d => isColorRow(d) && isCutBrand(d) && !hasImg(d)).length;
+  const tab       = (cutData.length === 0 || state.cnTab === 'color') ? 'color' : 'cut';
 
   const tabs = `<div class="cn-tabs">
     <button class="cn-tab ${tab==='cut'?'active':''}" data-cntab="cut">제품컷 <b>${cutData.length}</b></button>
