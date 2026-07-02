@@ -3,7 +3,40 @@
    갤러리 카드 그리드 + 모달 + 제거된 제품 복원
    ============================================ */
 
+/* ===== China 제품컷 / 컬러 아카이브 분류 ===== */
+const PRODUCT_CUT_BRANDS = ["JNBY", "MO&Co.", "Urban Revivo"];
+const hasImg      = d => !!(d.image_url && d.image_url.trim());
+const isCutBrand  = d => PRODUCT_CUT_BRANDS.includes(d.brand);
+const isCutRow    = d => d.country === 'CN' && hasImg(d);
+const isColorRow  = d => d.country === 'CN';
+const cnActive    = () => state.countries.size === 1 && state.countries.has('CN');
+
 function renderGallery(data) {
+  // China 단독 필터가 아니면 원래 갤러리 그대로
+  if (!cnActive()) return renderPlainGallery(data);
+
+  const tab       = state.cnTab === 'color' ? 'color' : 'cut';
+  const cutData   = data.filter(isCutRow);
+  const colorData = data.filter(isColorRow);
+  const missing   = data.filter(d => isColorRow(d) && isCutBrand(d) && !hasImg(d)).length;
+
+  const tabs = `<div class="cn-tabs">
+    <button class="cn-tab ${tab==='cut'?'active':''}" data-cntab="cut">제품컷 <b>${cutData.length}</b></button>
+    <button class="cn-tab ${tab==='color'?'active':''}" data-cntab="color">컬러 아카이브 <b>${colorData.length}</b></button>
+  </div>`;
+
+  const body = tab === 'color'
+    ? renderColorArchive(colorData)
+    : renderPlainGallery(cutData, {
+        title: 'CHINA · 제품컷',
+        sub: `지정 브랜드 + 이미지 보유 · 이미지 미수집 ${missing}건은 컬러 탭에서만 표시`
+      });
+
+  return tabs + body;
+}
+
+/* 원래 카드 그리드 (탭 헤더/서브 옵션) */
+function renderPlainGallery(data, opts) {
   if (!data.length) return '<div class="empty">선택한 조건에 맞는 제품이 없습니다.</div>';
 
   const totalPages = Math.ceil(data.length / CONFIG.PAGE_SIZE);
@@ -13,10 +46,9 @@ function renderGallery(data) {
 
   const cards = pageData.map((d, i) => {
     const gi = start + i;
-    const hasImage = d.image_url && d.image_url.trim();
+    const hasImage = hasImg(d);
     const hexes = (d.hex_colors || []).slice(0, 6);
 
-    // 이미지 없을 때: 컬러 블록 그리드로 표시
     const imgContent = hasImage
       ? `<div class="imgph">${PH_SVG}<span>${esc(d.product_name)}</span></div>
          <img src="${esc(proxyImage(d.image_url))}" alt="${esc(d.product_name)}" loading="lazy"
@@ -25,7 +57,7 @@ function renderGallery(data) {
               onload="this.previousElementSibling.style.display='none'"
               onerror="imgFallback(this, this.dataset.orig)">`
       : `<div class="color-card-wrap">
-           ${hexes.length ? hexes.map(h => `<div class="color-card-block" style="background:${esc(h)}"></div>`).join("") : `<div class="color-card-empty">${esc(d.product_name)}</div>`}
+         ${hexes.length ? hexes.map(h => `<div class="color-card-block" style="background:${esc(h)}"></div>`).join("") : `<div class="color-card-empty">${esc(d.product_name)}</div>`}
          </div>`;
 
     return `<div class="pcard" data-idx="${gi}">
@@ -33,7 +65,7 @@ function renderGallery(data) {
         <button class="card-x" data-rm="${d._id}" title="잘못 분류된 제품 — 제거">×</button>
         ${imgContent}
       </div>
-                <div class="pinfo">
+      <div class="pinfo">
         <div class="pbrand">${esc(d.brand)} · ${esc(d.gender)}</div>
         <div class="pname">${esc(d.product_name)}</div>
         <div class="pcat">${esc(d.category)}${d.subcategory && d.subcategory!=='—' ? ' · ' + esc(d.subcategory) : ''}</div>
@@ -51,13 +83,47 @@ function renderGallery(data) {
        </div>`
     : '';
 
-  return `${restoreBar}
-    <div class="gal-head">
-      <h3>Products</h3>
-      <span class="gmeta">${data.length} items · ${state.page} / ${totalPages} page</span>
-    </div>
-    <div class="gallery">${cards}</div>
-    ${pager(totalPages)}`;
+  const head = opts
+    ? `<div class="gal-head"><h3>${esc(opts.title)}</h3>
+         <span class="gmeta">${data.length} items · ${state.page} / ${totalPages} page</span></div>
+       <div class="gal-sub">${esc(opts.sub || '')}</div>`
+    : `<div class="gal-head"><h3>Products</h3>
+         <span class="gmeta">${data.length} items · ${state.page} / ${totalPages} page</span></div>`;
+
+  return `${restoreBar}${head}<div class="gallery">${cards}</div>${pager(totalPages)}`;
+}
+
+/* 컬러 아카이브 = 콤팩트 테이블 */
+function renderColorArchive(data) {
+  if (!data.length) return '<div class="empty">컬러 데이터가 없습니다.</div>';
+
+  const totalPages = Math.ceil(data.length / CONFIG.PAGE_SIZE);
+  if (state.page > totalPages) state.page = 1;
+  const start = (state.page - 1) * CONFIG.PAGE_SIZE;
+  const pageData = data.slice(start, start + CONFIG.PAGE_SIZE);
+
+  const rows = pageData.map(d => {
+    const hexes = (d.hex_colors || []).slice(0, 8);
+    const swatches = hexes.length
+      ? hexes.map(h => `<span class="cl-sw" style="background:${esc(h)}" title="${esc(h)}"></span>`).join("")
+      : '<span class="cl-none">—</span>';
+    const badge = isCutRow(d) ? '<span class="cl-badge">제품컷</span>' : '';
+    return `<tr>
+      <td class="cl-brand">${esc(d.brand)}${badge}</td>
+      <td class="cl-prod">${esc(d.product_name)}</td>
+      <td class="cl-cat">${esc(d.category)}</td>
+      <td class="cl-colors">${swatches}</td>
+      <td class="cl-hex">${esc(hexes.join(' '))}</td>
+    </tr>`;
+  }).join("");
+
+  return `<div class="gal-head"><h3>CHINA · 컬러 아카이브</h3>
+      <span class="gmeta">${data.length} items · ${state.page} / ${totalPages} page</span></div>
+    <div class="gal-sub">China 전체 컬러 (제품컷 브랜드 포함) · 상단 “컬러 CSV” 에서 다운로드</div>
+    <table class="cl-table">
+      <thead><tr><th>Brand</th><th>Product</th><th>Category</th><th>Colors</th><th>Hex</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>${pager(totalPages)}`;
 }
 
 function pager(totalPages) {
@@ -114,9 +180,9 @@ function openModal(d) {
             onload="this.previousElementSibling.style.display='none'"
             onerror="imgFallback(this, this.dataset.orig)">`
     : `<div class="modal-color-wrap">
-         ${hexes.length
-           ? hexes.map(h => `<div class="modal-color-block" style="background:${esc(h)}"><span>${esc(h)}</span></div>`).join("")
-           : '<div class="color-card-empty">컬러 정보만 있음</div>'}
+       ${hexes.length
+         ? hexes.map(h => `<div class="modal-color-block" style="background:${esc(h)}"><span>${esc(h)}</span></div>`).join("")
+         : '<div class="color-card-empty">컬러 정보만 있음</div>'}
        </div>`;
 
   $("#modalbox").innerHTML = `
@@ -136,7 +202,7 @@ function openModal(d) {
       <div style="font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-soft);margin:16px 0 4px">Colors</div>
       <div class="mcolorlist">${colorChips}</div>
       ${hasImage ? `<div style="margin-top:18px"><a href="${esc(d.image_url)}" target="_blank"
-         style="font-size:11px;color:var(--accent);letter-spacing:.05em">원본 이미지 열기 ↗</a></div>` : ''}
+        style="font-size:11px;color:var(--accent);letter-spacing:.05em">원본 이미지 열기 ↗</a></div>` : ''}
     </div>`;
   $("#modal").classList.add("open");
   $("#modalbox .mclose").onclick = () => $("#modal").classList.remove("open");
