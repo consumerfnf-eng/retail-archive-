@@ -121,9 +121,20 @@ function bindGlobalEvents() {
     render();
   };
 
-  // CSV 다운로드
-  $("#csvColorFiltered").onclick = () =>
-    download(`color_raw_filtered_${stamp()}.csv`, colorRows(filtered()));
+  // CSV 다운로드 (필터 드롭다운)
+  const colorFilteredWrap = $("#csvColorFilteredWrap");
+  if (colorFilteredWrap) {
+    const toggleFiltered = $("#csvColorFilteredBtn");
+    if (toggleFiltered) toggleFiltered.onclick = (e) => { e.stopPropagation(); colorFilteredWrap.classList.toggle("open"); };
+    document.addEventListener("click", () => colorFilteredWrap.classList.remove("open"));
+    $(".csv-dd-item-filtered").forEach(it => it.onclick = () => {
+      const scope = it.dataset.scope || "all";
+      const base = filtered();
+      const suffix = scope === "no-acc" ? "no_acc" : (scope === "acc-only" ? "acc_only" : "all");
+      download(`color_raw_filtered_${suffix}_${stamp()}.csv`, colorRows(base, scope));
+      colorFilteredWrap.classList.remove("open");
+    });
+  }
   const colorAllWrap = $("#csvColorAllWrap");
    if (colorAllWrap) {
       const toggle = $("#csvColorAllBtn");
