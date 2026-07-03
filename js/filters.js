@@ -124,8 +124,8 @@ function buildFacets() {
     {id:"Country",      title:"Country · 국가",      key:"country",     set:state.countries,     fmt:countryLabel, scope: periodFilteredScope},
     {id:"BrandGroups",  title:"Category · 카테고리", key:"brandGroup",  set:state.brandGroups,                     scope: countryFilteredScope},
     {id:"Brands",       title:"Brands",              key:"brand",       set:state.brands,                          scope: countryFilteredScope},
-    {id:"Categories",   title:"Item Categories",     key:"category",    set:state.categories,                      scope: periodFilteredScope},
-    {id:"Subcategories",title:"Sub-categories",      key:"subcategory", set:state.subcategories,                   scope: periodFilteredScope},
+    {id:"Categories",   title:"Item Categories",     key:"category",    set:state.categories,                      scope: countryFilteredScope},
+    {id:"Subcategories",title:"Sub-categories",      key:"subcategory", set:state.subcategories,                   scope: countryFilteredScope},
     {id:"Fabric",       title:"Fabric · 소재",       key:"fabric",      set:state.fabrics,                         scope: periodFilteredScope}
   ];
 
