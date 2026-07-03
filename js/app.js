@@ -127,7 +127,7 @@ function bindGlobalEvents() {
     const toggleFiltered = $("#csvColorFilteredBtn");
     if (toggleFiltered) toggleFiltered.onclick = (e) => { e.stopPropagation(); colorFilteredWrap.classList.toggle("open"); };
     document.addEventListener("click", () => colorFilteredWrap.classList.remove("open"));
-    $(".csv-dd-item-filtered").forEach(it => it.onclick = () => {
+    $$(".csv-dd-item-filtered").forEach(it => it.onclick = () => {
       const scope = it.dataset.scope || "all";
       const base = filtered();
       const suffix = scope === "no-acc" ? "no_acc" : (scope === "acc-only" ? "acc_only" : "all");
