@@ -114,20 +114,24 @@ function buildFacets() {
   const scope = genderScope();
      const periodFilteredScope = state.months.size ? scope.filter(d => state.months.has(monthLabel(d.month))) : scope;
 
-  // Country 필터가 선택된 경우 BrandGroups/Brands scope를 줄임
-  const countryFilteredScope = state.countries.size
-        ? periodFilteredScope.filter(d => state.countries.has(d.country || "GL"))
-        : periodFilteredScope;
+      // Country 필터가 선택된 경우 BrandGroups/Brands scope를 줄임
+         const countryFilteredScope = state.countries.size
+                 ? periodFilteredScope.filter(d => state.countries.has(d.country || "GL"))
+                          : periodFilteredScope;
 
-  const defs = [
-    {id:"Period",       title:"Period · 시즌",       key:"month",       set:state.months,        fmt:monthLabel,   scope: scope},
-    {id:"Country",      title:"Country · 국가",      key:"country",     set:state.countries,     fmt:countryLabel, scope: periodFilteredScope},
-    {id:"BrandGroups",  title:"Category · 카테고리", key:"brandGroup",  set:state.brandGroups,                     scope: countryFilteredScope},
-    {id:"Brands",       title:"Brands",              key:"brand",       set:state.brands,                          scope: countryFilteredScope},
-    {id:"Categories",   title:"Item Categories",     key:"category",    set:state.categories,                      scope: countryFilteredScope},
-    {id:"Subcategories",title:"Sub-categories",      key:"subcategory", set:state.subcategories,                   scope: countryFilteredScope},
-    {id:"Fabric",       title:"Fabric · 소재",       key:"fabric",      set:state.fabrics,                         scope: periodFilteredScope}
-  ];
+         // Brand/브랜드그룹(상위 카테고리) 필터가 선택된 경우 Item Categories/Sub-categories scope를 줄임
+         const brandFilteredScope = (state.brandGroups.size || state.brands.size) ? countryFilteredScope.filter(d => (!state.brandGroups.size || state.brandGroups.has(d.brandGroup)) && (!state.brands.size || state.brands.has(d.brand))) : countryFilteredScope;
+         const categoryFilteredScope = state.categories.size ? brandFilteredScope.filter(d => state.categories.has(d.category)) : brandFilteredScope;
+
+         const defs = [
+            {id:"Period",       title:"Period · 시즌",        key:"month",       set:state.months,        fmt:monthLabel,   scope: scope},
+            {id:"Country",      title:"Country · 국가",       key:"country",     set:state.countries,      fmt:countryLabel, scope: periodFilteredScope},
+            {id:"BrandGroups",  title:"Category · 카테고리",  key:"brandGroup",  set:state.brandGroups,                       scope: countryFilteredScope},
+            {id:"Brands",       title:"Brands",               key:"brand",       set:state.brands,                           scope: countryFilteredScope},
+            {id:"Categories",   title:"Item Categories",      key:"category",    set:state.categories,                       scope: brandFilteredScope},
+            {id:"Subcategories",title:"Sub-categories",       key:"subcategory", set:state.subcategories,                    scope: categoryFilteredScope},
+            {id:"Fabric",       title:"Fabric · 소재",        key:"fabric",      set:state.fabrics,                          scope: periodFilteredScope},
+                  ];
 
   $("#facets").innerHTML = defs.map(def => {
     const sel = def.set.size;
