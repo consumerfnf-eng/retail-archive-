@@ -9,7 +9,8 @@
 
   const CONFIG = {
     // 자동 감지가 실패할 때만 채운다. 비워두면 스스로 찾는다.
-    gridSelector: '',        // 예: '.product-grid'
+    rootSelector: '#content',// 카드가 그려지는 영역 (F&F Retail Archive 기준)
+    gridSelector: '',        // 자동 감지 실패 시에만 지정
     cardSelector: '',        // 예: '.product-card'
     headerSelector: '',      // 버튼을 넣을 곳. 비우면 상단에 고정 배치
     planningUrl: 'planning.html',
@@ -32,16 +33,20 @@
   /* ------------------------------------------------- 카드 그리드 자동 감지 */
   function findGrid() {
     if (CONFIG.gridSelector) return $(CONFIG.gridSelector);
-    // img 를 가진 형제 요소가 가장 많은 부모를 카드 그리드로 본다
+    // 카드 영역 안에서만 찾는다. 모달·사이드바가 섞이지 않게.
+    const root = (CONFIG.rootSelector && $(CONFIG.rootSelector)) || document.body;
     const counts = new Map();
-    $$('img').forEach(img => {
+    const seeds = $$('img', root).concat(
+      $$('[style*="background-image"]', root).filter(e => !e.querySelector('img')));
+    seeds.forEach(img => {
       let el = img;
       for (let d = 0; d < 6 && el.parentElement; d++) {
         el = el.parentElement;
         const p = el.parentElement;
         if (!p) break;
-        const sameTag = Array.from(p.children)
-          .filter(c => c.tagName === el.tagName && c.querySelector('img'));
+        const sameTag = Array.from(p.children).filter(c =>
+          c.tagName === el.tagName &&
+          (c.querySelector('img') || c.querySelector('[style*="background-image"]')));
         if (sameTag.length >= CONFIG.minCards) {
           counts.set(p, Math.max(counts.get(p) || 0, sameTag.length));
           break;
@@ -56,13 +61,20 @@
   function cardsOf(grid) {
     if (!grid) return [];
     if (CONFIG.cardSelector) return $$(CONFIG.cardSelector, grid);
-    return Array.from(grid.children).filter(c => c.querySelector('img'));
+    return Array.from(grid.children).filter(c =>
+      c.querySelector('img') || c.querySelector('[style*="background-image"]'));
   }
 
   /* ------------------------------------------------- 카드에서 상품정보 추출 */
   function readCard(card) {
     const img = card.querySelector('img');
-    const src = img ? (img.getAttribute('data-src') || img.src || '') : '';
+    let src = img ? (img.getAttribute('data-src') || img.src || '') : '';
+    if (!src) {   // background-image 로 그린 경우
+      const holder = card.querySelector('[style*="background-image"]') || card;
+      const bg = getComputedStyle(holder).backgroundImage || '';
+      const m = bg.match(/url\(["']?(.+?)["']?\)/);
+      if (m) src = m[1];
+    }
     const lines = Array.from(card.querySelectorAll('*'))
       .filter(e => !e.children.length)
       .map(e => (e.textContent || '').trim())
@@ -161,6 +173,29 @@
   .ffp-row .x{margin-left:auto; cursor:pointer; color:#b9b0a2; padding:0 4px;}
   .ffp-row .x:hover{color:var(--ffp-accent);}
   .ffp-actions{display:flex; gap:9px; justify-content:flex-end;}
+
+  /* 담은 목록 */
+  .ffp-tray{position:fixed; left:0; right:0; bottom:57px; z-index:9997; background:#fff;
+    border-top:1px solid var(--ffp-line); box-shadow:0 -3px 16px rgba(40,32,20,.09);
+    max-height:44vh; display:none; flex-direction:column;}
+  .ffp-tray.open{display:flex;}
+  .ffp-tray-head{display:flex; align-items:center; gap:10px; padding:10px 20px 10px 150px;
+    border-bottom:1px solid var(--ffp-line); font-size:13px;}
+  .ffp-tray-body{overflow:auto; padding:12px 20px 16px 150px;
+    display:grid; grid-template-columns:repeat(auto-fill,minmax(128px,1fr)); gap:9px;}
+  .ffp-tile{position:relative; border:1px solid var(--ffp-line); border-radius:9px;
+    overflow:hidden; background:#faf8f4;}
+  .ffp-tile .th{aspect-ratio:1; background:#f1ece3; display:block;}
+  .ffp-tile .th img{width:100%; height:100%; object-fit:cover; display:block;}
+  .ffp-tile .tx{padding:6px 8px 8px; font-size:10.5px; line-height:1.35;}
+  .ffp-tile .tx b{display:block; color:var(--ffp-ink); font-size:11px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .ffp-tile .tx span{color:#8c8377;}
+  .ffp-tile .rm{position:absolute; top:5px; right:5px; width:20px; height:20px; border-radius:50%;
+    border:1px solid var(--ffp-line); background:rgba(255,255,255,.95); cursor:pointer;
+    font-size:11px; line-height:1; color:#8c8377; padding:0;}
+  .ffp-tile .rm:hover{background:var(--ffp-accent); color:#fff; border-color:var(--ffp-accent);}
+  .ffp-tray-empty{grid-column:1/-1; padding:26px 0; text-align:center; color:#a09684; font-size:12.5px;}
   @media (max-width:640px){ .ffp-launch{left:12px; bottom:14px;}
     body.ffp-selecting .ffp-launch{bottom:96px;} }
   @media (prefers-reduced-motion:reduce){ .ffp-bar,.ffp-card::after{transition:none;} }
@@ -184,6 +219,7 @@
 
   /* --------------------------------------------------------------- 렌더 */
   function paint() {
+    if (!grid) return;
     cardsOf(grid).forEach(card => {
       if (!card.classList.contains('ffp-card')) {
         card.classList.add('ffp-card');
@@ -196,7 +232,7 @@
       card.dataset.ffpKey = it.key;
       card.classList.toggle('ffp-on', sel.has(it.key));
     });
-    const cards = cardsOf(grid);
+    const cards = grid ? cardsOf(grid) : [];
     const visItems = cards.map(readCard);
     const visOn = visItems.filter(it => sel.has(it.key)).length;
     const allBtn = $('#ffpAll');
@@ -218,9 +254,28 @@
       : `선택된 상품 없음<small>카드 왼쪽 위 체크박스를 누르세요 · Shift+체크로 범위 선택 · 카드를 누르면 상세가 열립니다</small>`;
     $('#ffpStart').disabled = n === 0;
     $('#ffpClear').disabled = n === 0;
+    const tb = $('#ffpTray');
+    if (tb) { tb.textContent = n ? `담은 목록 ${n}` : '담은 목록'; tb.disabled = n === 0; }
+    if ($('#ffpTrayPanel') && $('#ffpTrayPanel').classList.contains('open')) renderTray();
   }
 
   let lastIdx = null;
+  function renderTray() {
+    const items = [...sel.values()];
+    $('#ffpTrayN').textContent = items.length;
+    const t = $('#ffpTray');
+    if (t) t.textContent = items.length ? `담은 목록 ${items.length}` : '담은 목록';
+    $('#ffpTrayBody').innerHTML = items.length ? items.map(it => `
+      <div class="ffp-tile" data-k="${it.key}">
+        <span class="th">${it.img ? `<img src="${it.img}" alt="" loading="lazy"
+          onerror="this.style.visibility='hidden'">` : ''}</span>
+        <button class="rm" title="빼기">✕</button>
+        <div class="tx"><b>${it.name || '(이름 없음)'}</b>
+          <span>${it.brand || ''}${it.cat ? ' · ' + it.cat : ''}</span></div>
+      </div>`).join('')
+      : '<div class="ffp-tray-empty">아직 담은 상품이 없습니다. 카드의 체크박스를 누르세요.</div>';
+  }
+
   function onCheckClick(e) {
     // 체크박스에서만 동작한다. 카드 본체 클릭은 원래대로 상세 패널이 열린다.
     e.preventDefault(); e.stopPropagation();
@@ -245,7 +300,15 @@
   }
 
   function setMode(on) {
+    if (on) {
+      grid = findGrid();            // 누른 시점에 다시 찾는다
+      if (!grid || !cardsOf(grid).length) {
+        alert('상품 카드를 찾지 못했습니다.\n카드가 다 표시된 뒤 다시 눌러주세요.');
+        return;
+      }
+    }
     document.body.classList.toggle('ffp-selecting', on);
+    if (!on && $('#ffpTrayPanel')) $('#ffpTrayPanel').classList.remove('open');
     $('#ffpToggle').classList.toggle('on', on);
     $('#ffpToggle').textContent = on ? '셀렉 종료' : '시즌 기획';
     if (on) paint();
@@ -296,14 +359,11 @@
   }
 
   /* ---------------------------------------------------------------- 부팅 */
+  let booted = false;
   function boot() {
+    if (booted) return;
     grid = findGrid();
-    if (!grid) {
-      console.warn('[시즌기획] 카드 그리드를 찾지 못했습니다.\n' +
-        '카드를 감싸는 요소의 선택자를 파일 상단 CONFIG.gridSelector 에 넣어주세요.\n' +
-        '현재 문서의 img 개수: ' + document.querySelectorAll('img').length);
-      return;
-    }
+
     document.head.insertAdjacentHTML('beforeend', `<style>${CSS}</style>`);
 
     const host = CONFIG.headerSelector && $(CONFIG.headerSelector);
@@ -317,7 +377,17 @@
         <span class="ffp-spacer"></span>
         <button class="ffp-btn" id="ffpAll">이 화면 전체 선택</button>
         <button class="ffp-btn" id="ffpClear">전체 해제</button>
+        <button class="ffp-btn" id="ffpTray">담은 목록</button>
         <button class="ffp-btn primary" id="ffpStart">기획 시작</button>
+      </div>
+      <div class="ffp-tray" id="ffpTrayPanel">
+        <div class="ffp-tray-head">
+          <b>담은 상품 <span id="ffpTrayN">0</span></b>
+          <span style="font-size:11px;color:#8c8377">페이지를 넘기거나 필터를 바꿔도 그대로 남습니다</span>
+          <span style="flex:1"></span>
+          <button class="ffp-btn" id="ffpTrayClose">닫기</button>
+        </div>
+        <div class="ffp-tray-body" id="ffpTrayBody"></div>
       </div>
       <div class="ffp-modal" role="dialog" aria-modal="true" aria-label="시즌 기획 배치 만들기">
         <div class="ffp-sheet">
@@ -346,6 +416,7 @@
         </div>
       </div>`);
 
+    booted = true;
     restore();
     btn.onclick = () => setMode(!document.body.classList.contains('ffp-selecting'));
     $('#ffpAll').onclick = () => {
@@ -358,6 +429,17 @@
     };
     $('#ffpClear').onclick = () => { sel.clear(); save(); paint(); };
     $('#ffpStart').onclick = openSheet;
+    $('#ffpTray').onclick = () => {
+      const t = $('#ffpTrayPanel');
+      t.classList.toggle('open');
+      if (t.classList.contains('open')) renderTray();
+    };
+    $('#ffpTrayClose').onclick = () => $('#ffpTrayPanel').classList.remove('open');
+    $('#ffpTrayBody').addEventListener('click', ev => {
+      if (!ev.target.classList.contains('rm')) return;
+      sel.delete(ev.target.closest('.ffp-tile').dataset.k);
+      save(); paint(); renderTray();
+    });
     $('#ffpCsv').onclick = downloadCsv;
     $('#ffpGo').onclick = startPlanning;
     $('#ffpCancel').onclick = () => $('.ffp-modal').classList.remove('open');
@@ -373,14 +455,21 @@
     });
 
     // 필터로 카드가 다시 그려져도 선택 표시를 유지한다
+    let repaint = null;
     new MutationObserver(() => {
-      if (document.body.classList.contains('ffp-selecting')) paint();
-    }).observe(grid, { childList: true, subtree: true });
+      if (!document.body.classList.contains('ffp-selecting')) return;
+      clearTimeout(repaint);
+      repaint = setTimeout(() => { grid = findGrid() || grid; paint(); }, 80);
+    }).observe(document.body, { childList: true, subtree: true });
 
     if (sel.size) setMode(true);
-    console.log('[시즌기획] 준비 완료 · 카드 %d개 감지 · 그리드', cardsOf(grid).length, grid);
+    console.log('[시즌기획] 버튼 준비 완료. 카드가 다 뜬 뒤 왼쪽 아래 [시즌 기획] 을 누르세요.');
   }
 
+  /* 아카이브는 시트를 fetch 한 뒤 카드를 그린다.
+     DOMContentLoaded 시점에는 그리드가 비어 있으므로 생길 때까지 기다린다. */
+  /* 카드가 늦게 그려지더라도 버튼은 바로 띄운다.
+     실제 카드 탐색은 [시즌 기획] 을 누른 시점에 한다. */
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
 })();
