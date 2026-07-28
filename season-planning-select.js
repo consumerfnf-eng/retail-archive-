@@ -9,9 +9,10 @@
 
   const CONFIG = {
     // 자동 감지가 실패할 때만 채운다. 비워두면 스스로 찾는다.
-    rootSelector: '#content',// 카드가 그려지는 영역 (F&F Retail Archive 기준)
-    gridSelector: '',        // 자동 감지 실패 시에만 지정
-    cardSelector: '',        // 예: '.product-card'
+    // F&F Retail Archive 실제 구조 (2026-07 확인)
+    rootSelector: '#content',
+    gridSelector: '.gallery',
+    cardSelector: '.pcard',
     headerSelector: '',      // 버튼을 넣을 곳. 비우면 상단에 고정 배치
     planningUrl: 'planning.html',
     // 아카이브 대분류. 카드 텍스트에서 이 값을 찾아 자동 분류한다.
@@ -36,9 +37,15 @@
   let cardSel = '';
 
   function detect(verbose) {
+    // 1순위: 지정된 선택자
     if (CONFIG.cardSelector) {
       const cs = $$(CONFIG.cardSelector);
-      if (cs.length) { cardSel = CONFIG.cardSelector; return cs[0].parentElement; }
+      if (cs.length) {
+        cardSel = CONFIG.cardSelector;
+        if (verbose) console.info('[시즌기획] 선택자', cardSel, cs.length + '개');
+        return cs[0].parentElement;
+      }
+      if (verbose) console.info('[시즌기획]', CONFIG.cardSelector, '없음 → 자동 탐색');
     }
     const roots = [];
     if (CONFIG.rootSelector && $(CONFIG.rootSelector)) roots.push($(CONFIG.rootSelector));
@@ -400,13 +407,12 @@
 
   function setMode(on) {
     if (on) {
-      grid = detect(true);          // 누른 시점에 다시 찾고 진단도 남긴다
+      grid = detect(false);
       const found = cardsOf();
-      console.log('[시즌기획] 카드 선택자:', cardSel || '(없음)', '· 개수:', found.length);
       if (!found.length) {
-        alert('상품 카드를 찾지 못했습니다.\n\n' +
-              'F12 → Console 에 찍힌 [시즌기획] 후보 클래스 목록을 알려주시면\n' +
-              '정확한 선택자를 넣어 드리겠습니다.');
+        // 조용히 물러난다. 아카이브 열람을 방해하지 않는다.
+        console.warn('[시즌기획] 상품 카드를 찾지 못해 셀렉 모드를 열지 않았습니다.',
+                     '선택자:', CONFIG.cardSelector);
         return;
       }
     }
@@ -473,6 +479,17 @@
     const btn = document.createElement('button');
     btn.id = 'ffpToggle'; btn.className = 'ffp-btn'; btn.textContent = '시즌 기획';
     if (host) host.appendChild(btn); else { btn.classList.add('ffp-launch'); document.body.appendChild(btn); }
+    btn.style.display = 'none';        // 카드가 확인되기 전에는 감춰둔다
+
+    /* 카드가 그려졌는지 주기적으로 확인해 버튼을 보였다 감춘다.
+       열람만 하는 사람에게는 아무것도 뜨지 않는다. */
+    function syncBtn() {
+      const has = cardsOf().length > 0 || (detect(false) && cardsOf().length > 0);
+      if (!has && document.body.classList.contains('ffp-selecting')) setMode(false);
+      btn.style.display = has ? '' : 'none';
+    }
+    setTimeout(syncBtn, 400);
+    setInterval(syncBtn, 1500);
 
     document.body.insertAdjacentHTML('beforeend', `
       <div class="ffp-bar">
@@ -527,7 +544,7 @@
       grid = findGrid() || grid;
       const cards = cardsOf();
       const items = cards.map(readCard);
-      if (!items.length) { alert('상품 카드를 찾지 못했습니다.'); return; }
+      if (!items.length) { console.warn('[시즌기획] 카드가 없어 전체 선택을 건너뜁니다.'); return; }
       const allOn = items.length && items.every(it => sel.has(it.key));
       items.forEach(it => { if (allOn) sel.delete(it.key); else sel.set(it.key, it); });
       save(); paint();
@@ -586,7 +603,7 @@
     addEventListener('resize', schedulePaint);
 
     if (sel.size) setMode(true);
-    console.log('[시즌기획] 버튼 준비 완료. 카드가 다 뜬 뒤 왼쪽 아래 [시즌 기획] 을 누르세요.');
+    console.info('[시즌기획] 준비됨 · 카드 선택자', CONFIG.cardSelector);
   }
 
   /* 아카이브는 시트를 fetch 한 뒤 카드를 그린다.
