@@ -113,12 +113,14 @@
   }
 
   function cardsOf() {
-    if (cardSel) {
-      const root = (CONFIG.rootSelector && $(CONFIG.rootSelector)) || document;
-      const list = $$(cardSel, root);
-      if (list.length) return list;
-    }
-    return [];
+    if (!cardSel) return [];
+    const root = (CONFIG.rootSelector && $(CONFIG.rootSelector)) || document;
+    const all = $$(cardSel, root);
+    if (!all.length) return [];
+    // .pcard 안에 또 .pcard 가 있는 구조 대응 — 바깥쪽 하나만 남긴다.
+    // 이걸 안 하면 클릭 하나에 두 개가 반응한다.
+    const outer = all.filter(el => !all.some(o => o !== el && o.contains(el)));
+    return outer.length ? outer : all;
   }
 
   /* ------------------------------------------------- 카드에서 상품정보 추출 */
@@ -308,7 +310,8 @@
     const cards = cardsOf();
     const lay = ensureLayer();
 
-    if (lay.children.length !== cards.length) {
+    if (lay.children.length !== cards.length || lay.dataset.sel !== cardSel) {
+      lay.dataset.sel = cardSel;
       lay.innerHTML = cards.map((_, i) =>
         `<div class="ffp-pick" data-i="${i}" role="checkbox" tabindex="0"
            aria-label="이 상품 담기"><span class="ffp-mark"></span></div>`).join('');
@@ -604,6 +607,14 @@
 
     if (sel.size) setMode(true);
     console.info('[시즌기획] 준비됨 · 카드 선택자', CONFIG.cardSelector);
+    setTimeout(() => {
+      const root = (CONFIG.rootSelector && $(CONFIG.rootSelector)) || document;
+      const all = $$(cardSel || CONFIG.cardSelector, root);
+      const out = cardsOf();
+      if (all.length !== out.length)
+        console.info('[시즌기획] 중첩 카드 %d개를 걸러 %d개로 정리했습니다.',
+                     all.length - out.length, out.length);
+    }, 1200);
   }
 
   /* 아카이브는 시트를 fetch 한 뒤 카드를 그린다.
