@@ -31,38 +31,87 @@
   }
 
   /* ------------------------------------------------- 카드 그리드 자동 감지 */
-  function findGrid() {
-    if (CONFIG.gridSelector) return $(CONFIG.gridSelector);
-    // 카드 영역 안에서만 찾는다. 모달·사이드바가 섞이지 않게.
-    const root = (CONFIG.rootSelector && $(CONFIG.rootSelector)) || document.body;
-    const counts = new Map();
-    const seeds = $$('img', root).concat(
-      $$('[style*="background-image"]', root).filter(e => !e.querySelector('img')));
-    seeds.forEach(img => {
-      let el = img;
-      for (let d = 0; d < 6 && el.parentElement; d++) {
-        el = el.parentElement;
-        const p = el.parentElement;
-        if (!p) break;
-        const sameTag = Array.from(p.children).filter(c =>
-          c.tagName === el.tagName &&
-          (c.querySelector('img') || c.querySelector('[style*="background-image"]')));
-        if (sameTag.length >= CONFIG.minCards) {
-          counts.set(p, Math.max(counts.get(p) || 0, sameTag.length));
-          break;
+  /* 형제 개수를 세는 대신, 이미지를 품은 요소의 '클래스명 빈도'로 카드를 찾는다.
+     같은 클래스가 여러 번 반복되는 것이 카드다. 중첩 구조에 훨씬 강하다. */
+  let cardSel = '';
+
+  function detect(verbose) {
+    if (CONFIG.cardSelector) {
+      const cs = $$(CONFIG.cardSelector);
+      if (cs.length) { cardSel = CONFIG.cardSelector; return cs[0].parentElement; }
+    }
+    const roots = [];
+    if (CONFIG.rootSelector && $(CONFIG.rootSelector)) roots.push($(CONFIG.rootSelector));
+    roots.push(document.body);
+
+    for (const root of roots) {
+      const imgs = $$('img', root).filter(im => {
+        const r = im.getBoundingClientRect();
+        return r.width > 40 && r.height > 40;        // 아이콘 제외
+      });
+      if (imgs.length < 4) continue;
+
+      // 이미지에서 위로 올라가며 만나는 클래스들을 집계
+      const freq = new Map();
+      imgs.forEach(im => {
+        let el = im, seen = new Set();
+        for (let d = 0; d < 8 && el.parentElement && el !== root; d++) {
+          el = el.parentElement;
+          const cls = (el.className || '').toString().trim().split(/\s+/)
+            .filter(c => c && !c.startsWith('ffp'))[0];
+          if (cls && !seen.has(cls)) {
+            seen.add(cls);
+            const rec = freq.get(cls) || { n: 0, depth: d, el: el };
+            rec.n++; freq.set(cls, rec);
+          }
         }
+      });
+
+      // 실제 DOM 개수를 확인한다. 순회 중 여러 번 세어진 그리드는 여기서 걸러진다.
+      const cands = [];
+      freq.forEach((rec, cls) => {
+        const nodes = $$('.' + CSS.escape(cls), root);
+        if (nodes.length < 4) return;                       // 그리드(1개) 제외
+        if (!nodes.every(n => n.querySelector('img'))) return;
+        const txt = nodes[0].innerText ? nodes[0].innerText.trim().length : 0;
+        cands.push({ cls: cls, n: nodes.length, depth: rec.depth, txt: txt });
+      });
+      if (!cands.length) continue;
+
+      // 가장 흔한 개수(=카드 수)를 고르고, 그중 가장 바깥쪽 요소를 카드로 본다.
+      // 이미지 껍데기(mimg 등)는 안쪽이고 글자가 없어서 걸러진다.
+      const byN = {};
+      cands.forEach(c => { byN[c.n] = (byN[c.n] || 0) + 1; });
+      const cardN = +Object.entries(byN).sort((a, b) => b[1] - a[1])[0][0];
+      const pool = cands.filter(c => c.n === cardN)
+                        .sort((a, b) => (b.txt - a.txt) || (b.depth - a.depth));
+
+      if (verbose) {
+        console.log('[시즌기획] 후보:', cands
+          .sort((a, b) => b.depth - a.depth)
+          .map(c => `${c.cls}(${c.n}개, 깊이${c.depth}, 글자${c.txt})`).join(', '));
       }
-    });
-    let best = null, bestN = 0;
-    counts.forEach((n, el) => { if (n > bestN) { bestN = n; best = el; } });
-    return best;
+      if (pool.length) {
+        cardSel = '.' + CSS.escape(pool[0].cls);
+        const first = $(cardSel, root);
+        return first ? first.parentElement : null;
+      }
+    }
+    return null;
   }
 
-  function cardsOf(grid) {
-    if (!grid) return [];
-    if (CONFIG.cardSelector) return $$(CONFIG.cardSelector, grid);
-    return Array.from(grid.children).filter(c =>
-      c.querySelector('img') || c.querySelector('[style*="background-image"]'));
+  function findGrid() {
+    const g = detect(false);
+    return g;
+  }
+
+  function cardsOf() {
+    if (cardSel) {
+      const root = (CONFIG.rootSelector && $(CONFIG.rootSelector)) || document;
+      const list = $$(cardSel, root);
+      if (list.length) return list;
+    }
+    return [];
   }
 
   /* ------------------------------------------------- 카드에서 상품정보 추출 */
@@ -106,7 +155,7 @@
   }
 
   /* ------------------------------------------------------------- 스타일 */
-  const CSS = `
+  const STYLE_TEXT = `
   :root{ --ffp-accent: var(--accent, #d4573a); --ffp-ink:#26221d; --ffp-line:#e3ddd2; }
   .ffp-btn{font:inherit; font-size:13px; font-weight:600; letter-spacing:-.01em; cursor:pointer;
     border:1px solid var(--ffp-line); background:#fff; color:var(--ffp-ink);
@@ -131,6 +180,17 @@
 
   body.ffp-selecting .ffp-card.ffp-on::after{box-shadow:inset 0 0 0 2px var(--ffp-accent);}
   #ffpLayer{position:absolute; left:0; top:0; width:0; height:0; z-index:9996; pointer-events:none;}
+  #ffpLayer .ffp-pick{position:absolute; pointer-events:auto; cursor:pointer; border-radius:10px;
+    background:transparent; transition:background .12s, box-shadow .12s;}
+  #ffpLayer .ffp-pick:hover{background:rgba(255,255,255,.14); box-shadow:inset 0 0 0 2px var(--ffp-line);}
+  #ffpLayer .ffp-pick:focus-visible{outline:2px solid var(--ffp-accent); outline-offset:2px;}
+  #ffpLayer .ffp-pick.on{box-shadow:inset 0 0 0 3px var(--ffp-accent); background:rgba(212,87,58,.10);}
+  #ffpLayer .ffp-mark{position:absolute; top:9px; left:9px; width:26px; height:26px; border-radius:50%;
+    border:1.5px solid var(--ffp-line); background:rgba(255,255,255,.96);
+    display:flex; align-items:center; justify-content:center; font-size:14px; color:#fff;
+    box-shadow:0 1px 5px rgba(40,32,20,.18);}
+  #ffpLayer .ffp-pick.on .ffp-mark{background:var(--ffp-accent); border-color:var(--ffp-accent);}
+  #ffpLayer .ffp-pick.on .ffp-mark::after{content:'✓';}
   #ffpLayer .ffp-check{position:absolute; pointer-events:auto; padding:0; width:26px; height:26px;
     border-radius:7px; border:1.5px solid var(--ffp-line); background:rgba(255,255,255,.97);
     display:flex; align-items:center; justify-content:center; font-size:15px; color:#fff;
@@ -238,27 +298,28 @@
       updateBar([]);
       return;
     }
-    grid = findGrid() || grid;
-    const cards = grid ? cardsOf(grid) : [];
+    const cards = cardsOf();
     const lay = ensureLayer();
 
-    // 카드 수가 바뀌었을 때만 다시 만든다
     if (lay.children.length !== cards.length) {
       lay.innerHTML = cards.map((_, i) =>
-        `<button class="ffp-check" data-i="${i}" aria-label="선택"></button>`).join('');
+        `<div class="ffp-pick" data-i="${i}" role="checkbox" tabindex="0"
+           aria-label="이 상품 담기"><span class="ffp-mark"></span></div>`).join('');
     }
     const items = cards.map(readCard);
-    Array.from(lay.children).forEach((box, i) => {
+    Array.from(lay.children).forEach((ov, i) => {
       const card = cards[i];
-      if (!card) { box.style.display = 'none'; return; }
+      if (!card) { ov.style.display = 'none'; return; }
       const r = card.getBoundingClientRect();
-      if (r.width < 20 || r.bottom < -60 || r.top > innerHeight + 60) {
-        box.style.display = 'none'; return;      // 화면 밖은 안 그린다
+      if (r.width < 20 || r.bottom < -80 || r.top > innerHeight + 80) {
+        ov.style.display = 'none'; return;
       }
-      box.style.display = '';
-      box.style.left = (r.left + scrollX + 8) + 'px';
-      box.style.top  = (r.top + scrollY + 8) + 'px';
-      box.classList.toggle('on', sel.has(items[i].key));
+      ov.style.display = '';
+      ov.style.left   = (r.left + scrollX) + 'px';
+      ov.style.top    = (r.top + scrollY) + 'px';
+      ov.style.width  = r.width + 'px';
+      ov.style.height = r.height + 'px';
+      ov.classList.toggle('on', sel.has(items[i].key));
     });
     updateBar(items);
   }
@@ -285,7 +346,7 @@
       .map(([c, v]) => `${c} ${v}`).join(' · ');
     $('.ffp-count').innerHTML = n
       ? `${n}건 선택됨<small>${catTxt} · 대분류별로 나뉘어 기획됩니다</small>`
-      : `선택된 상품 없음<small>카드 왼쪽 위 체크박스를 누르세요 · Shift+체크로 범위 선택</small>`;
+      : `선택된 상품 없음<small>카드를 누르면 담깁니다 · Shift+클릭으로 범위 선택 · 셀렉 종료 시 원래대로</small>`;
     $('#ffpStart').disabled = n === 0;
     $('#ffpClear').disabled = n === 0;
     const tb = $('#ffpTray');
@@ -314,14 +375,12 @@
 
   let lastIdx = null;
   function handleCheckClick(e) {
-    const box = e.target.closest && e.target.closest('#ffpLayer .ffp-check');
-    if (!box) return;
+    const ov = e.target.closest && e.target.closest('#ffpLayer .ffp-pick');
+    if (!ov) return;
     e.preventDefault(); e.stopPropagation();
-    grid = findGrid() || grid;
-    const cards = cardsOf(grid);
-    const idx = +box.dataset.i;
-    const card = cards[idx];
-    if (!card) return;
+    const cards = cardsOf();
+    const idx = +ov.dataset.i;
+    if (!cards[idx]) return;
 
     if (e.shiftKey && lastIdx !== null) {
       const [a, b] = idx < lastIdx ? [idx, lastIdx] : [lastIdx, idx];
@@ -332,7 +391,7 @@
         if (on) sel.set(it2.key, it2); else sel.delete(it2.key);
       }
     } else {
-      const it = readCard(card);
+      const it = readCard(cards[idx]);
       if (sel.has(it.key)) sel.delete(it.key); else sel.set(it.key, it);
     }
     lastIdx = idx;
@@ -341,9 +400,13 @@
 
   function setMode(on) {
     if (on) {
-      grid = findGrid();            // 누른 시점에 다시 찾는다
-      if (!grid || !cardsOf(grid).length) {
-        alert('상품 카드를 찾지 못했습니다.\n카드가 다 표시된 뒤 다시 눌러주세요.');
+      grid = detect(true);          // 누른 시점에 다시 찾고 진단도 남긴다
+      const found = cardsOf();
+      console.log('[시즌기획] 카드 선택자:', cardSel || '(없음)', '· 개수:', found.length);
+      if (!found.length) {
+        alert('상품 카드를 찾지 못했습니다.\n\n' +
+              'F12 → Console 에 찍힌 [시즌기획] 후보 클래스 목록을 알려주시면\n' +
+              '정확한 선택자를 넣어 드리겠습니다.');
         return;
       }
     }
@@ -404,7 +467,7 @@
     if (booted) return;
     grid = findGrid();
 
-    document.head.insertAdjacentHTML('beforeend', `<style>${CSS}</style>`);
+    document.head.insertAdjacentHTML('beforeend', `<style>${STYLE_TEXT}</style>`);
 
     const host = CONFIG.headerSelector && $(CONFIG.headerSelector);
     const btn = document.createElement('button');
@@ -462,7 +525,7 @@
     $('#ffpAll').onclick = () => {
       // 화면에 그려진 카드가 모두 선택돼 있으면 해제, 아니면 전체 선택
       grid = findGrid() || grid;
-      const cards = cardsOf(grid);
+      const cards = cardsOf();
       const items = cards.map(readCard);
       if (!items.length) { alert('상품 카드를 찾지 못했습니다.'); return; }
       const allOn = items.length && items.every(it => sel.has(it.key));
@@ -502,6 +565,14 @@
     // 필터로 카드가 다시 그려져도 선택 표시를 유지한다
     // 클릭은 문서 한 곳에서만 받는다. 카드가 다시 그려져도 리스너가 늘지 않는다.
     document.addEventListener('click', handleCheckClick, true);
+    document.addEventListener('keydown', e => {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      const ov = document.activeElement;
+      if (ov && ov.classList && ov.classList.contains('ffp-pick')) {
+        e.preventDefault(); handleCheckClick({ target: ov, shiftKey: e.shiftKey,
+          preventDefault(){}, stopPropagation(){} });
+      }
+    }, true);
     document.addEventListener('mousedown', e => {
       if (document.body.classList.contains('ffp-selecting') &&
           e.target.closest && e.target.closest('.ffp-check')) {
