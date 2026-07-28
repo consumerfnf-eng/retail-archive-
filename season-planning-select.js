@@ -218,53 +218,61 @@
   }
 
   /* --------------------------------------------------------------- 렌더 */
+  let painting = false;
+  let mo = null;
+
   function paint() {
-    if (!grid) return;
-    cardsOf(grid).forEach(card => {
-      if (!card.classList.contains('ffp-card')) {
-        card.classList.add('ffp-card');
+    if (!grid || painting) return;
+    painting = true;
+    if (mo) mo.disconnect();                 // 내 변경으로 감시자가 다시 돌지 않게
+
+    const cards = cardsOf(grid);
+    cards.forEach(card => {
+      card.classList.add('ffp-card');
+      // 중복 방지: 이미 있는 체크박스는 지우고 하나만 둔다
+      const boxes = card.querySelectorAll(':scope > .ffp-check');
+      for (let i = 1; i < boxes.length; i++) boxes[i].remove();
+      if (!boxes.length) {
         const box = document.createElement('span');
         box.className = 'ffp-check';
         card.appendChild(box);
-        box.addEventListener('click', onCheckClick, true);
       }
       const it = readCard(card);
       card.dataset.ffpKey = it.key;
       card.classList.toggle('ffp-on', sel.has(it.key));
     });
-    const cards = grid ? cardsOf(grid) : [];
+
+    const n = sel.size;
     const visItems = cards.map(readCard);
     const visOn = visItems.filter(it => sel.has(it.key)).length;
     const allBtn = $('#ffpAll');
     if (allBtn) {
       const allOn = visItems.length && visOn === visItems.length;
-      allBtn.textContent = allOn
-        ? `이 화면 ${visItems.length}건 해제`
-        : `이 화면 전체 선택 (${visItems.length})`;
+      allBtn.textContent = allOn ? `이 화면 ${visItems.length}건 해제`
+                                 : `이 화면 전체 선택 (${visItems.length})`;
       allBtn.classList.toggle('on', !!allOn);
       allBtn.disabled = !visItems.length;
     }
-    const n = sel.size;
     const byCat = {};
     sel.forEach(v => { const c = v.cat || '미분류'; byCat[c] = (byCat[c] || 0) + 1; });
-    const catTxt = Object.entries(byCat).sort((a,b)=>b[1]-a[1])
-      .map(([c,v]) => `${c} ${v}`).join(' · ');
+    const catTxt = Object.entries(byCat).sort((a, b) => b[1] - a[1])
+      .map(([c, v]) => `${c} ${v}`).join(' · ');
     $('.ffp-count').innerHTML = n
       ? `${n}건 선택됨<small>${catTxt} · 대분류별로 나뉘어 기획됩니다</small>`
-      : `선택된 상품 없음<small>카드 왼쪽 위 체크박스를 누르세요 · Shift+체크로 범위 선택 · 카드를 누르면 상세가 열립니다</small>`;
+      : `선택된 상품 없음<small>카드 왼쪽 위 체크박스를 누르세요 · Shift+체크로 범위 선택</small>`;
     $('#ffpStart').disabled = n === 0;
     $('#ffpClear').disabled = n === 0;
     const tb = $('#ffpTray');
     if (tb) { tb.textContent = n ? `담은 목록 ${n}` : '담은 목록'; tb.disabled = n === 0; }
     if ($('#ffpTrayPanel') && $('#ffpTrayPanel').classList.contains('open')) renderTray();
+
+    if (mo) mo.observe(document.body, { childList: true, subtree: true });
+    painting = false;
   }
 
-  let lastIdx = null;
   function renderTray() {
     const items = [...sel.values()];
     $('#ffpTrayN').textContent = items.length;
-    const t = $('#ffpTray');
-    if (t) t.textContent = items.length ? `담은 목록 ${items.length}` : '담은 목록';
     $('#ffpTrayBody').innerHTML = items.length ? items.map(it => `
       <div class="ffp-tile" data-k="${it.key}">
         <span class="th">${it.img ? `<img src="${it.img}" alt="" loading="lazy"
@@ -273,18 +281,25 @@
         <div class="tx"><b>${it.name || '(이름 없음)'}</b>
           <span>${it.brand || ''}${it.cat ? ' · ' + it.cat : ''}</span></div>
       </div>`).join('')
-      : '<div class="ffp-tray-empty">아직 담은 상품이 없습니다. 카드의 체크박스를 누르세요.</div>';
+      : '<div class="ffp-tray-empty">아직 담은 상품이 없습니다.</div>';
   }
 
-  function onCheckClick(e) {
-    // 체크박스에서만 동작한다. 카드 본체 클릭은 원래대로 상세 패널이 열린다.
-    e.preventDefault(); e.stopPropagation();
-    const cards = cardsOf(grid);
-    const card = e.currentTarget.closest('.ffp-card');
-    const idx = cards.indexOf(card);
+  let lastIdx = null;
+  function handleCheckClick(e) {
+    const box = e.target.closest && e.target.closest('.ffp-check');
+    if (!box) return;
+    if (!document.body.classList.contains('ffp-selecting')) return;
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.stopImmediatePropagation) e.stopImmediatePropagation();
 
-    // Shift+클릭 = 직전에 누른 카드부터 여기까지 한 번에
-    if (e.shiftKey && lastIdx !== null && idx >= 0) {
+    grid = findGrid() || grid;
+    const cards = cardsOf(grid);
+    const card = box.closest('.ffp-card');
+    const idx = cards.indexOf(card);
+    if (idx < 0) return;
+
+    if (e.shiftKey && lastIdx !== null) {
       const [a, b] = idx < lastIdx ? [idx, lastIdx] : [lastIdx, idx];
       const on = !sel.has(readCard(cards[idx]).key);
       for (let i = a; i <= b; i++) {
@@ -421,8 +436,10 @@
     btn.onclick = () => setMode(!document.body.classList.contains('ffp-selecting'));
     $('#ffpAll').onclick = () => {
       // 화면에 그려진 카드가 모두 선택돼 있으면 해제, 아니면 전체 선택
+      grid = findGrid() || grid;
       const cards = cardsOf(grid);
       const items = cards.map(readCard);
+      if (!items.length) { alert('상품 카드를 찾지 못했습니다.'); return; }
       const allOn = items.length && items.every(it => sel.has(it.key));
       items.forEach(it => { if (allOn) sel.delete(it.key); else sel.set(it.key, it); });
       save(); paint();
@@ -455,12 +472,22 @@
     });
 
     // 필터로 카드가 다시 그려져도 선택 표시를 유지한다
+    // 클릭은 문서 한 곳에서만 받는다. 카드가 다시 그려져도 리스너가 늘지 않는다.
+    document.addEventListener('click', handleCheckClick, true);
+    document.addEventListener('mousedown', e => {
+      if (document.body.classList.contains('ffp-selecting') &&
+          e.target.closest && e.target.closest('.ffp-check')) {
+        e.preventDefault(); e.stopPropagation();
+      }
+    }, true);
+
     let repaint = null;
-    new MutationObserver(() => {
+    mo = new MutationObserver(() => {
       if (!document.body.classList.contains('ffp-selecting')) return;
       clearTimeout(repaint);
-      repaint = setTimeout(() => { grid = findGrid() || grid; paint(); }, 80);
-    }).observe(document.body, { childList: true, subtree: true });
+      repaint = setTimeout(() => { grid = findGrid() || grid; paint(); }, 120);
+    });
+    mo.observe(document.body, { childList: true, subtree: true });
 
     if (sel.size) setMode(true);
     console.log('[시즌기획] 버튼 준비 완료. 카드가 다 뜬 뒤 왼쪽 아래 [시즌 기획] 을 누르세요.');
