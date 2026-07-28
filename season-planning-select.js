@@ -103,27 +103,34 @@
   .ffp-btn:focus-visible{outline:2px solid var(--ffp-accent); outline-offset:2px;}
   .ffp-btn.on{background:var(--ffp-ink); color:#fff; border-color:var(--ffp-ink);}
   .ffp-btn.primary{background:var(--ffp-accent); color:#fff; border-color:var(--ffp-accent);}
+  #ffpAll{border-color:var(--ffp-ink); font-weight:700;}
+  #ffpAll.on{background:var(--ffp-ink); color:#fff;}
   .ffp-btn.primary:hover{filter:brightness(.94);}
   .ffp-btn[disabled]{opacity:.4; cursor:not-allowed;}
-  .ffp-launch{position:fixed; top:14px; right:18px; z-index:9998;}
+  /* 상세 패널이 보통 오른쪽에서 열리므로 왼쪽 아래에 띄운다 */
+  .ffp-launch{position:fixed; left:18px; bottom:18px; z-index:9998;
+    box-shadow:0 2px 10px rgba(40,32,20,.16); transition:bottom .2s;}
+  body.ffp-selecting .ffp-launch{bottom:74px;}
 
   /* 셀렉 모드 */
-  body.ffp-selecting .ffp-card{position:relative; cursor:pointer;}
+  body.ffp-selecting .ffp-card{position:relative;}
   body.ffp-selecting .ffp-card::after{content:''; position:absolute; inset:0; border-radius:inherit;
     box-shadow:inset 0 0 0 2px transparent; pointer-events:none; transition:box-shadow .15s;}
-  body.ffp-selecting .ffp-card:hover::after{box-shadow:inset 0 0 0 2px var(--ffp-line);}
+
   body.ffp-selecting .ffp-card.ffp-on::after{box-shadow:inset 0 0 0 2px var(--ffp-accent);}
-  .ffp-check{position:absolute; top:9px; left:9px; z-index:5; width:22px; height:22px;
-    border-radius:6px; border:1.5px solid var(--ffp-line); background:rgba(255,255,255,.94);
-    display:none; align-items:center; justify-content:center; font-size:13px; color:#fff;}
+  .ffp-check{position:absolute; top:8px; left:8px; z-index:20; width:26px; height:26px;
+    border-radius:7px; border:1.5px solid var(--ffp-line); background:rgba(255,255,255,.97);
+    display:none; align-items:center; justify-content:center; font-size:15px; color:#fff;
+    cursor:pointer; box-shadow:0 1px 4px rgba(40,32,20,.14);}
   body.ffp-selecting .ffp-check{display:flex;}
+  .ffp-check:hover{border-color:var(--ffp-accent);}
   .ffp-card.ffp-on .ffp-check{background:var(--ffp-accent); border-color:var(--ffp-accent);}
   .ffp-card.ffp-on .ffp-check::after{content:'✓';}
 
   /* 하단 바 */
   .ffp-bar{position:fixed; left:0; right:0; bottom:0; z-index:9999; background:#fff;
     border-top:1px solid var(--ffp-line); box-shadow:0 -2px 14px rgba(40,32,20,.07);
-    padding:11px 20px; display:none; align-items:center; gap:14px;
+    padding:11px 20px 11px 150px; display:none; align-items:center; gap:14px;
     transform:translateY(100%); transition:transform .2s ease;}
   body.ffp-selecting .ffp-bar{display:flex; transform:translateY(0);}
   .ffp-count{font-size:14px; font-weight:700; color:var(--ffp-ink);}
@@ -154,7 +161,8 @@
   .ffp-row .x{margin-left:auto; cursor:pointer; color:#b9b0a2; padding:0 4px;}
   .ffp-row .x:hover{color:var(--ffp-accent);}
   .ffp-actions{display:flex; gap:9px; justify-content:flex-end;}
-  @media (max-width:640px){ .ffp-launch{top:auto; bottom:70px; right:12px;} }
+  @media (max-width:640px){ .ffp-launch{left:12px; bottom:14px;}
+    body.ffp-selecting .ffp-launch{bottom:96px;} }
   @media (prefers-reduced-motion:reduce){ .ffp-bar,.ffp-card::after{transition:none;} }
   `;
 
@@ -182,12 +190,24 @@
         const box = document.createElement('span');
         box.className = 'ffp-check';
         card.appendChild(box);
-        card.addEventListener('click', onCardClick, true);
+        box.addEventListener('click', onCheckClick, true);
       }
       const it = readCard(card);
       card.dataset.ffpKey = it.key;
       card.classList.toggle('ffp-on', sel.has(it.key));
     });
+    const cards = cardsOf(grid);
+    const visItems = cards.map(readCard);
+    const visOn = visItems.filter(it => sel.has(it.key)).length;
+    const allBtn = $('#ffpAll');
+    if (allBtn) {
+      const allOn = visItems.length && visOn === visItems.length;
+      allBtn.textContent = allOn
+        ? `이 화면 ${visItems.length}건 해제`
+        : `이 화면 전체 선택 (${visItems.length})`;
+      allBtn.classList.toggle('on', !!allOn);
+      allBtn.disabled = !visItems.length;
+    }
     const n = sel.size;
     const byCat = {};
     sel.forEach(v => { const c = v.cat || '미분류'; byCat[c] = (byCat[c] || 0) + 1; });
@@ -195,17 +215,32 @@
       .map(([c,v]) => `${c} ${v}`).join(' · ');
     $('.ffp-count').innerHTML = n
       ? `${n}건 선택됨<small>${catTxt} · 대분류별로 나뉘어 기획됩니다</small>`
-      : `선택된 상품 없음<small>카드를 눌러 고르세요</small>`;
+      : `선택된 상품 없음<small>카드 왼쪽 위 체크박스를 누르세요 · Shift+체크로 범위 선택 · 카드를 누르면 상세가 열립니다</small>`;
     $('#ffpStart').disabled = n === 0;
     $('#ffpClear').disabled = n === 0;
   }
 
-  function onCardClick(e) {
-    if (!document.body.classList.contains('ffp-selecting')) return;
+  let lastIdx = null;
+  function onCheckClick(e) {
+    // 체크박스에서만 동작한다. 카드 본체 클릭은 원래대로 상세 패널이 열린다.
     e.preventDefault(); e.stopPropagation();
-    const card = e.currentTarget;
-    const it = readCard(card);
-    if (sel.has(it.key)) sel.delete(it.key); else sel.set(it.key, it);
+    const cards = cardsOf(grid);
+    const card = e.currentTarget.closest('.ffp-card');
+    const idx = cards.indexOf(card);
+
+    // Shift+클릭 = 직전에 누른 카드부터 여기까지 한 번에
+    if (e.shiftKey && lastIdx !== null && idx >= 0) {
+      const [a, b] = idx < lastIdx ? [idx, lastIdx] : [lastIdx, idx];
+      const on = !sel.has(readCard(cards[idx]).key);
+      for (let i = a; i <= b; i++) {
+        const it2 = readCard(cards[i]);
+        if (on) sel.set(it2.key, it2); else sel.delete(it2.key);
+      }
+    } else {
+      const it = readCard(card);
+      if (sel.has(it.key)) sel.delete(it.key); else sel.set(it.key, it);
+    }
+    lastIdx = idx;
     save(); paint();
   }
 
@@ -264,7 +299,9 @@
   function boot() {
     grid = findGrid();
     if (!grid) {
-      console.warn('[시즌기획] 카드 그리드를 찾지 못했습니다. CONFIG.gridSelector 를 지정하세요.');
+      console.warn('[시즌기획] 카드 그리드를 찾지 못했습니다.\n' +
+        '카드를 감싸는 요소의 선택자를 파일 상단 CONFIG.gridSelector 에 넣어주세요.\n' +
+        '현재 문서의 img 개수: ' + document.querySelectorAll('img').length);
       return;
     }
     document.head.insertAdjacentHTML('beforeend', `<style>${CSS}</style>`);
@@ -278,8 +315,8 @@
       <div class="ffp-bar">
         <span class="ffp-count"></span>
         <span class="ffp-spacer"></span>
-        <button class="ffp-btn" id="ffpAll">보이는 것 모두 선택</button>
-        <button class="ffp-btn" id="ffpClear">선택 해제</button>
+        <button class="ffp-btn" id="ffpAll">이 화면 전체 선택</button>
+        <button class="ffp-btn" id="ffpClear">전체 해제</button>
         <button class="ffp-btn primary" id="ffpStart">기획 시작</button>
       </div>
       <div class="ffp-modal" role="dialog" aria-modal="true" aria-label="시즌 기획 배치 만들기">
@@ -312,7 +349,11 @@
     restore();
     btn.onclick = () => setMode(!document.body.classList.contains('ffp-selecting'));
     $('#ffpAll').onclick = () => {
-      cardsOf(grid).forEach(c => { const it = readCard(c); sel.set(it.key, it); });
+      // 화면에 그려진 카드가 모두 선택돼 있으면 해제, 아니면 전체 선택
+      const cards = cardsOf(grid);
+      const items = cards.map(readCard);
+      const allOn = items.length && items.every(it => sel.has(it.key));
+      items.forEach(it => { if (allOn) sel.delete(it.key); else sel.set(it.key, it); });
       save(); paint();
     };
     $('#ffpClear').onclick = () => { sel.clear(); save(); paint(); };
@@ -337,7 +378,7 @@
     }).observe(grid, { childList: true, subtree: true });
 
     if (sel.size) setMode(true);
-    console.log('[시즌기획] 카드 %d개 감지', cardsOf(grid).length);
+    console.log('[시즌기획] 준비 완료 · 카드 %d개 감지 · 그리드', cardsOf(grid).length, grid);
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
