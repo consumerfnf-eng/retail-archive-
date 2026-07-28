@@ -1,0 +1,722 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>시즌 기획 · 아이템 라벨링</title>
+<style>
+:root{--bg:#faf7f2;--card:#fff;--line:#e5ded2;--ink:#2b2620;--sub:#8a8175;
+ --accent:#b6483f;--gold:#a8894f;--ok:#4f7a52;--warn:#b8860b}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-size:14px;
+ font-family:-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Malgun Gothic','맑은 고딕',sans-serif}
+header{position:sticky;top:0;z-index:20;background:rgba(250,247,242,.97);backdrop-filter:blur(8px);
+ border-bottom:1px solid var(--line);padding:13px 22px;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+h1{margin:0;font-size:16px;letter-spacing:-.01em}
+h1 small{display:block;font-size:11px;color:var(--sub);font-weight:400;margin-top:2px}
+.steps{display:flex;gap:4px}
+.step{font-size:12px;padding:6px 13px;border-radius:999px;border:1px solid var(--line);
+ background:#fff;color:var(--sub);cursor:pointer}
+.step.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.step.done{border-color:var(--ok);color:var(--ok)}
+.spacer{flex:1}
+.btn{font:inherit;font-size:12.5px;font-weight:600;padding:8px 15px;border-radius:999px;
+ border:1px solid var(--line);background:#fff;cursor:pointer;color:var(--ink)}
+.btn:hover{background:#f5f1ea}
+.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn.primary:hover{filter:brightness(.94)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+main{padding:20px 22px 60px;max-width:1500px}
+section{display:none}section.on{display:block}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:16px}
+.panel h2{margin:0 0 3px;font-size:14px}
+.panel p.hint{margin:0 0 14px;font-size:12px;color:var(--sub);line-height:1.6}
+.row{display:flex;gap:12px;flex-wrap:wrap}
+.f{flex:1;min-width:170px}
+.f label{display:block;font-size:10.5px;font-weight:700;letter-spacing:.05em;
+ text-transform:uppercase;color:var(--sub);margin-bottom:5px}
+.f select,.f input{width:100%;font:inherit;font-size:13px;padding:8px 10px;
+ border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(178px,1fr));gap:12px}
+.it{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden;position:relative}
+.it .ph{aspect-ratio:1;background:#f2ece3;display:flex;align-items:center;justify-content:center}
+.it .ph img{width:100%;height:100%;object-fit:contain}
+.it .mt{padding:9px 11px 11px}
+.it .b{font-size:10px;color:var(--sub);letter-spacing:.03em}
+.it .n{font-size:12px;font-weight:600;margin:3px 0 5px;line-height:1.3}
+.badge{position:absolute;top:8px;right:8px;font-size:9.5px;padding:3px 8px;border-radius:999px;
+ background:rgba(255,255,255,.95);border:1px solid var(--line);color:var(--sub)}
+.badge.ok{background:#eaf3ea;border-color:#c9e0cb;color:var(--ok);font-weight:700}
+.badge.rev{background:#fdf6e3;border-color:#eadfc0;color:var(--warn);font-weight:700}
+.badge.err{background:#fbeae8;border-color:#eecac5;color:var(--accent);font-weight:700}
+.bar{height:5px;border-radius:999px;background:#ece5d7;overflow:hidden;margin:10px 0}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:999px;transition:width .2s}
+.log{font-family:ui-monospace,Menlo,monospace;font-size:11px;line-height:1.7;color:var(--sub);
+ background:#faf7f2;border:1px solid var(--line);border-radius:9px;padding:10px 12px;
+ max-height:190px;overflow:auto;white-space:pre-wrap}
+table.rv{width:100%;border-collapse:collapse;font-size:12px}
+table.rv th{text-align:left;font-size:10px;letter-spacing:.05em;text-transform:uppercase;
+ color:var(--sub);padding:7px 8px;border-bottom:1px solid var(--line)}
+table.rv td{padding:8px;border-bottom:1px solid #f1ece4;vertical-align:top}
+table.rv img{width:52px;height:52px;object-fit:contain;background:#f2ece3;border-radius:6px}
+table.rv select{font:inherit;font-size:11.5px;padding:4px 6px;border:1px solid var(--line);
+ border-radius:6px;background:#fff;max-width:150px}
+.axes{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:6px}
+.axes .ax{font-size:10.5px}
+.axes .ax label{display:block;color:var(--sub);margin-bottom:2px;font-size:9.5px}
+.axes .ax select{width:100%;font-size:10.5px;padding:3px 5px}
+.dist{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
+.dist .box{border:1px solid var(--line);border-radius:11px;padding:13px 15px;background:#fff}
+.dist h4{margin:0 0 9px;font-size:12px}
+.dist .r{display:flex;align-items:center;gap:8px;font-size:11.5px;margin-bottom:5px}
+.dist .r span:first-child{min-width:112px;color:var(--sub)}
+.dist .r .b2{flex:1;height:5px;background:#ece5d7;border-radius:999px;overflow:hidden}
+.dist .r .b2 i{display:block;height:100%;background:var(--gold);border-radius:999px}
+.dist .r b{min-width:28px;text-align:right}
+.empty{text-align:center;padding:44px 20px;color:var(--sub);font-size:13px;line-height:1.7}
+.note{font-size:11.5px;color:var(--warn);background:#fdf9ee;border:1px solid #eadfc0;
+ border-radius:8px;padding:9px 11px;margin-top:10px;line-height:1.6}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style></head><body>
+<header>
+  <h1>시즌 기획 · 아이템 라벨링<small id="hsub">아카이브에서 고른 아이템을 분석합니다</small></h1>
+  <div class="steps" id="steps">
+    <span class="step on" data-s="0">1 배치</span>
+    <span class="step" data-s="1">2 라벨링</span>
+    <span class="step" data-s="2">3 검수</span>
+    <span class="step" data-s="3">4 리포트</span>
+  </div>
+  <span class="spacer"></span>
+  <button class="btn" id="btnSave">작업 저장</button>
+  <button class="btn" id="btnExp">CSV 내려받기</button>
+</header>
+<div id="catbar" style="position:sticky;top:56px;z-index:19;background:rgba(250,247,242,.97);
+  backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:9px 22px;
+  display:flex;gap:5px;align-items:center;flex-wrap:wrap">
+  <span style="font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+    color:var(--sub);margin-right:6px">대분류</span>
+  <span id="catTabs" style="display:flex;gap:5px;flex-wrap:wrap"></span>
+</div>
+<main>
+
+<!-- 1 배치 -->
+<section class="on" id="s0">
+  <div class="panel">
+    <h2>배치 정보</h2>
+    <p class="hint">아카이브에서 <b>[기획 시작]</b>으로 넘어오면 자동으로 채워집니다. 직접 여신 경우 아래에서 지정하세요.</p>
+    <div class="row">
+      <div class="f"><label>기획 브랜드</label><select id="fBrand">
+        <option>MLB</option><option>Discovery</option><option>Sergio Tacchini</option><option>Duvetica</option>
+      </select></div>
+      <div class="f"><label>기획 시즌</label><select id="fSeason">
+        <option>27SS</option><option>27FW</option><option>28SS</option><option>28FW</option>
+      </select></div>
+    </div>
+    <div style="margin-top:13px">
+      <label style="display:block;font-size:10.5px;font-weight:700;letter-spacing:.05em;
+        text-transform:uppercase;color:var(--sub);margin-bottom:5px">전략 방향성</label>
+      <textarea id="fPurpose" rows="3" style="width:100%;font:inherit;font-size:13px;padding:10px 11px;
+        border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink);resize:vertical"
+        placeholder="예: SUMMER ITEM 고급화 — 저가 이미지에서 벗어나 소재와 풋베드로 차별화. 볼륨보다 비례로 승부."></textarea>
+      <p class="hint" style="margin:7px 0 0">리포트가 이 방향에 맞춰 작성됩니다. 카테고리·서브카테고리 전략을 문장으로 적으세요.</p>
+    </div>
+  </div>
+  <div class="panel">
+    <h2>선택한 아이템 <span id="cnt0" style="color:var(--sub);font-weight:400"></span></h2>
+    <p class="hint">이 목록이 라벨링 대상입니다.</p>
+    <div class="note" id="catNotice" style="display:none;margin:0 0 13px"></div>
+    <div class="grid" id="itemGrid"></div>
+    <div class="empty" id="emptyBatch" style="display:none">
+      선택된 아이템이 없습니다.<br>아카이브에서 <b>[시즌 기획]</b> → 카드 선택 → <b>[기획 시작]</b> 순서로 넘어오세요.<br><br>
+      <button class="btn" id="btnDemo">샘플 아이템으로 둘러보기</button>
+    </div>
+  </div>
+</section>
+
+<!-- 2 라벨링 -->
+<section id="s1">
+  <div class="panel">
+    <h2>AI 라벨링</h2>
+    <p class="hint">사진과 상품 정보를 함께 넘겨 라인 · 라이프스타일 · 디자인 39개 축을 판독합니다.
+      여러 각도가 있으면 함께 올려 정확도를 높입니다.</p>
+    <div class="row">
+      <div class="f" style="flex:2"><label>OpenAI API 키</label>
+        <input id="fKey" type="password" autocomplete="off" placeholder="sk-..."></div>
+      <div class="f"><label>모델</label><input id="fModel" value="gpt-4.1"></div>
+      <div class="f"><label>동시 처리</label><select id="fConc">
+        <option>1</option><option selected>3</option><option>5</option></select></div>
+      <div class="f"><label>대상</label><select id="fScope">
+        <option value="new">라벨 없는 건만</option><option value="all">전체 다시</option>
+      </select></div>
+    </div>
+    <div class="note">키는 브라우저에만 있고 어디에도 저장되지 않습니다. 300건 이상은 GitHub Actions 배치로 돌리는 편이 안전합니다.</div>
+    <div class="row" style="margin-top:13px">
+      <button class="btn primary" id="btnRun">라벨링 실행</button>
+      <button class="btn" id="btnMock">키 없이 시험 실행</button>
+      <button class="btn" id="btnStop" disabled>중지</button>
+    </div>
+    <div class="bar"><i id="prog" style="width:0%"></i></div>
+    <div class="log" id="log">대기 중</div>
+  </div>
+</section>
+
+<!-- 3 검수 -->
+<section id="s2">
+  <div class="panel">
+    <h2>1차 검수 <span id="cnt2" style="color:var(--sub);font-weight:400"></span></h2>
+    <p class="hint">자동 확정 기준은 <b>라인 신뢰도 75 이상</b>, <b>라이프스타일 1·2위 격차 10 이상</b>입니다.
+      미달이면 검수 대상으로 올라옵니다. 값을 고치면 확정으로 바뀝니다.</p>
+    <div class="row" style="margin-bottom:12px">
+      <button class="btn" id="fltAll">전체</button>
+      <button class="btn primary" id="fltRev">검수 필요만</button>
+    </div>
+    <div id="reviewWrap"></div>
+  </div>
+</section>
+
+<!-- 4 리포트 -->
+<section id="s3">
+  <div class="panel">
+    <h2>전략 방향성</h2>
+    <p class="hint">이 문장에 맞춰 리포트를 작성합니다. 여기서 바로 고칠 수 있습니다.</p>
+    <textarea id="repStrategy" rows="3" style="width:100%;font:inherit;font-size:13px;padding:10px 11px;
+      border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink);resize:vertical"></textarea>
+    <div class="row" style="margin-top:11px">
+      <button class="btn primary" id="btnRep">전략 리포트 생성</button>
+      <button class="btn" id="btnRepMock">키 없이 시험</button>
+      <span style="flex:1"></span>
+      <button class="btn" id="btnRepCopy">리포트 복사</button>
+    </div>
+    <div class="log" id="repLog" style="margin-top:11px;max-height:80px">대기 중</div>
+  </div>
+  <div class="panel" id="repOut" style="display:none">
+    <h2 id="repTitle">전략 리포트</h2>
+    <p class="hint" id="repSub"></p>
+    <div id="repBody"></div>
+  </div>
+  <div class="panel">
+    <h2>근거 · 셀렉 분포</h2>
+    <p class="hint">리포트가 참조한 라벨 집계입니다.</p>
+    <div class="dist" id="repDist"></div>
+    <div id="repFind" style="font-size:13px;line-height:1.85;margin-top:14px"></div>
+  </div>
+</section>
+
+</main>
+<script>
+const CFG = {"axes": {"A. 전체 실루엣": {"PROFILE": ["ULTRA_LOW", "LOW", "STANDARD", "VOLUME", "CHUNKY"], "LAST_SHAPE": ["SLIM", "REGULAR", "WIDE", "SCULPTED"], "VISUAL_WEIGHT": ["LIGHT", "BALANCED", "HEAVY"], "STYLE_STRUCTURE": ["FLAT", "RUNNER", "COURT", "TRAIL", "HYBRID"], "FOOT_EXPOSURE": ["HIGH", "MEDIUM", "LOW"]}, "B. 앞코": {"TOE_SHAPE": ["ROUND", "ALMOND", "SOFT_SQUARE", "SQUARE", "POINTED"], "TOE_WIDTH": ["NARROW", "REGULAR", "WIDE"], "TOE_VOLUME": ["FLAT", "MODERATE", "BULBOUS"], "TOE_TAPER": ["NONE", "SOFT", "STRONG"], "TOE_SPRING": ["LOW", "MEDIUM", "HIGH"], "TOE_DETAIL": ["PLAIN", "CAP_TOE", "T_TOE", "BUMPER", "PROTECTED"]}, "C. 발등·뱀프": {"VAMP_COVERAGE": ["LOW", "MID", "HIGH", "FULL"], "VAMP_LINE": ["STRAIGHT", "CURVED", "V_CUT", "U_CUT", "ASYMMETRIC"], "INSTEP_EXPOSURE": ["HIGH", "MID", "LOW"], "TOPLINE_SHAPE": ["ROUND", "SQUARE", "V", "IRREGULAR"], "STRAP_PRESENT": ["TRUE", "FALSE"], "STRAP_TYPE": ["NONE", "MARY_JANE", "T_STRAP", "CROSS", "DOUBLE", "ELASTIC"]}, "D. UPPER 소재": {"UPPER_PRIMARY_MATERIAL": ["SMOOTH_LEATHER_LIKE", "GRAINED_LEATHER_LIKE", "NAPPA_LIKE", "SUEDE_LIKE", "NUBUCK_LIKE", "SATIN_LIKE", "MESH", "ENGINEERED_KNIT", "CANVAS", "RIPSTOP", "COATED_TEXTILE", "PATENT_LIKE", "HAIRY_TEXTURE", "WOVEN", "TRANSPARENT", "METALLIC_FINISH"], "UPPER_SECONDARY_MATERIAL": ["NONE", "SMOOTH_LEATHER_LIKE", "GRAINED_LEATHER_LIKE", "SUEDE_LIKE", "SATIN_LIKE", "MESH", "ENGINEERED_KNIT", "CANVAS", "WOVEN", "TRANSPARENT", "METALLIC_FINISH"], "MATERIAL_LOCATION": ["ALL_OVER", "TOE", "QUARTER_PANEL", "VAMP", "COLLAR", "HEEL", "STRAP"], "MATERIAL_FINISH": ["MATTE", "SOFT_SHEEN", "GLOSSY", "TEXTURED", "BRUSHED"], "MATERIAL_CONFIDENCE": ["HIGH", "MEDIUM", "LOW"]}, "E. 솔 구조": {"SOLE_CONSTRUCTION": ["CUPSOLE", "VULCANIZED", "WAFER", "WEDGE", "PLATFORM", "SEGMENTED", "SCULPTED"], "SOLE_HEIGHT": ["ULTRA_THIN", "THIN", "MEDIUM", "THICK", "EXTRA_THICK"], "FOREFOOT_HEIGHT": ["THIN", "MEDIUM", "THICK"], "HEEL_HEIGHT": ["FLAT", "LOW", "MID", "HIGH"], "HEEL_FOREFOOT_DIFF": ["FLAT", "SLIGHT", "STRONG"], "OUTSOLE_EDGE": ["STRAIGHT", "FLARED", "CURVED", "IRREGULAR"], "OUTSOLE_PATTERN": ["FLAT", "HERRINGBONE", "WAFFLE", "LUGGED", "DEEP_LUG"], "ROCKER": ["NONE", "MILD", "STRONG"]}, "F. 브랜딩·모티프": {"LOGO_TYPE": ["NONE", "WORDMARK", "MONOGRAM", "EMBLEM", "INITIAL"], "LOGO_SCALE": ["NONE", "MICRO", "SMALL", "MEDIUM", "LARGE", "OVERSIZED"], "LOGO_TREATMENT": ["NONE", "EMBOSSED", "DEBOSSED", "PRINTED", "EMBROIDERED", "METAL_HARDWARE", "RUBBER_PATCH", "PERFORATED", "WOVEN_JACQUARD", "INTERLACED"], "LOGO_PLACEMENT": ["NONE", "TOE", "VAMP", "QUARTER", "HEEL_TAB", "TONGUE", "OUTSOLE", "INSOLE", "STRAP"], "PATTERN_TYPE": ["NONE", "MONOGRAM_ALLOVER", "GEOMETRIC", "ANIMAL", "FLORAL", "STRIPE", "CHECK", "GRAPHIC"], "PATTERN_SCALE": ["NONE", "MICRO", "SMALL", "MEDIUM", "LARGE"], "PATTERN_COVERAGE": ["NONE", "ACCENT", "PARTIAL", "ALLOVER"], "DECORATION": ["NONE", "STUD", "BEAD", "CHARM", "BOW", "CRYSTAL", "FRINGE"]}}, "lifestyle": ["WELLNESS", "PREMIUM SPORTIVE", "FEMININE", "STREET"], "lifestyleKo": {"WELLNESS": "웰니스", "PREMIUM SPORTIVE": "프리미엄 스포티브", "FEMININE": "페미닌", "STREET": "스트리트"}, "lines": ["LINER", "RUNNER", "SNEAKERS", "CHUNKY", "OUTDOOR", "SUMMER ITEM", "WINTER ITEM", "NEW LINE"], "categories": [{"code": "shoe", "ko": "신발", "active": true, "note": "라인 8 · 서브 52 · 라이프스타일 4 · 디자인 축 38"}, {"code": "top", "ko": "상의", "active": false, "note": "브랜드별 라이프스타일 구조 준비 중"}, {"code": "bottom", "ko": "하의", "active": false, "note": "브랜드별 라이프스타일 구조 준비 중"}, {"code": "outerwear", "ko": "아우터", "active": false, "note": "브랜드별 라이프스타일 구조 준비 중"}, {"code": "dress", "ko": "드레스", "active": false, "note": "브랜드별 라이프스타일 구조 준비 중"}, {"code": "bag", "ko": "가방", "active": false, "note": "브랜드별 라이프스타일 구조 준비 중"}, {"code": "acc", "ko": "액세서리", "active": false, "note": "브랜드별 라이프스타일 구조 준비 중"}, {"code": "other", "ko": "기타", "active": false, "note": "라벨링 구조 없음"}]};
+const TAX = {"lines": [{"line": "LINER", "def": "기본형·코트·덩크·스케이트·캔버스 계열"}, {"line": "RUNNER", "def": "러닝화 및 러닝 구조를 적용한 라이프스타일 슈즈"}, {"line": "SNEAKERS", "def": "낮고 슬림하며 발에 밀착되는 로우 프로파일 계열"}, {"line": "CHUNKY", "def": "높고 울퉁불퉁한 조형 솔이 디자인을 지배하는 패션 스니커즈"}, {"line": "OUTDOOR", "def": "아웃도어 디테일 또는 아웃도어 소재가 핵심인 유형"}, {"line": "SUMMER ITEM", "def": "샌들·슬리퍼·뮬 등 개방형 여름 아이템"}, {"line": "WINTER ITEM", "def": "어그·털·패딩·보온 부츠와 겨울 시즌 신발"}, {"line": "NEW LINE", "def": "일반 메리제인 구두 및 시즌물이 아닌 새로운 구조적 신발 유형"}], "subs": [{"code": "LINER_BASIC_MINIMAL", "line": "LINER", "ko": "베이직·미니멀"}, {"code": "LINER_COURT_TENNIS", "line": "LINER", "ko": "코트·테니스"}, {"code": "LINER_DUNK_BASKET", "line": "LINER", "ko": "덩크·바스켓 헤리티지"}, {"code": "LINER_SKATE", "line": "LINER", "ko": "스케이트"}, {"code": "LINER_CANVAS_VULCANIZED", "line": "LINER", "ko": "캔버스·벌커나이즈드"}, {"code": "LINER_CLASSIC_SLIPON", "line": "LINER", "ko": "클래식 슬립온"}, {"code": "LINER_PLATFORM", "line": "LINER", "ko": "플랫폼 라이너"}, {"code": "RUNNER_RETRO", "line": "RUNNER", "ko": "레트로 러너"}, {"code": "RUNNER_Y2K_TECH", "line": "RUNNER", "ko": "Y2K 테크 러너"}, {"code": "RUNNER_MODERN_PERFORMANCE", "line": "RUNNER", "ko": "모던 퍼포먼스"}, {"code": "RUNNER_MAX_CUSHION", "line": "RUNNER", "ko": "맥스 쿠션"}, {"code": "RUNNER_TECH_LIFESTYLE", "line": "RUNNER", "ko": "테크 라이프스타일 러너"}, {"code": "RUNNER_FASHION", "line": "RUNNER", "ko": "패션 러너"}, {"code": "SNEAKERS_TERRACE", "line": "SNEAKERS", "ko": "테라스"}, {"code": "SNEAKERS_RACING_DRIVING", "line": "SNEAKERS", "ko": "레이싱·드라이빙"}, {"code": "SNEAKERS_SLIM_RETRO", "line": "SNEAKERS", "ko": "슬림 레트로 트레이너"}, {"code": "SNEAKERS_MARTIAL_ARTS", "line": "SNEAKERS", "ko": "무술·복싱형"}, {"code": "SNEAKERS_BALLET", "line": "SNEAKERS", "ko": "발레"}, {"code": "SNEAKERS_MARYJANE", "line": "SNEAKERS", "ko": "스니커즈형 메리제인"}, {"code": "CHUNKY_DAD_SHOE", "line": "CHUNKY", "ko": "대디슈즈"}, {"code": "CHUNKY_SCULPTURAL", "line": "CHUNKY", "ko": "조형적 청키"}, {"code": "CHUNKY_SCULPTURAL_RUNNER", "line": "CHUNKY", "ko": "조형적 러너"}, {"code": "CHUNKY_BULKY_SKATE", "line": "CHUNKY", "ko": "벌키 스케이트"}, {"code": "CHUNKY_PUFFY_VOLUME", "line": "CHUNKY", "ko": "퍼피 볼륨"}, {"code": "CHUNKY_VOLUME_PLATFORM", "line": "CHUNKY", "ko": "볼륨 플랫폼"}, {"code": "OUTDOOR_HIKING", "line": "OUTDOOR", "ko": "하이킹"}, {"code": "OUTDOOR_TREKKING_APPROACH", "line": "OUTDOOR", "ko": "트레킹·어프로치"}, {"code": "OUTDOOR_TRAIL_RUNNER", "line": "OUTDOOR", "ko": "트레일 러너"}, {"code": "OUTDOOR_GORPCORE", "line": "OUTDOOR", "ko": "고프코어 라이프스타일"}, {"code": "OUTDOOR_TACTICAL_UTILITY", "line": "OUTDOOR", "ko": "전술·유틸리티"}, {"code": "OUTDOOR_WEATHER_RAIN", "line": "OUTDOOR", "ko": "웨더·레인"}, {"code": "SUMMER_FLIP_FLOP", "line": "SUMMER ITEM", "ko": "쪼리·플립플랍"}, {"code": "SUMMER_SLIDE", "line": "SUMMER ITEM", "ko": "슬라이드"}, {"code": "SUMMER_SPORT_CASUAL_SANDAL", "line": "SUMMER ITEM", "ko": "스포츠·캐주얼 샌들"}, {"code": "SUMMER_OUTDOOR_SANDAL", "line": "SUMMER ITEM", "ko": "아웃도어 샌들"}, {"code": "SUMMER_STRAP_SLINGBACK", "line": "SUMMER ITEM", "ko": "스트랩·슬링백 샌들"}, {"code": "SUMMER_MULE_BLOAFER", "line": "SUMMER ITEM", "ko": "뮬·블로퍼"}, {"code": "SUMMER_CLOG", "line": "SUMMER ITEM", "ko": "클로그"}, {"code": "SUMMER_WATER_AQUA", "line": "SUMMER ITEM", "ko": "워터·아쿠아"}, {"code": "SUMMER_INDOOR_SLIPPER", "line": "SUMMER ITEM", "ko": "실내 슬리퍼"}, {"code": "WINTER_SHEARLING_UGG", "line": "WINTER ITEM", "ko": "쉐어링·어그"}, {"code": "WINTER_PUFFER_BOOT", "line": "WINTER ITEM", "ko": "패딩 부츠"}, {"code": "WINTER_FUR_BOOT", "line": "WINTER ITEM", "ko": "퍼 부츠"}, {"code": "WINTER_SNEAKER_BOOT", "line": "WINTER ITEM", "ko": "윈터 스니커 부츠"}, {"code": "WINTER_PADDED_FUR_SLIPPER", "line": "WINTER ITEM", "ko": "패딩·퍼 슬리퍼"}, {"code": "WINTER_FASHION_BOOT", "line": "WINTER ITEM", "ko": "패션 부츠"}, {"code": "NEW_SNOAFER", "line": "NEW LINE", "ko": "스노퍼"}, {"code": "NEW_MARYJANE_DRESS", "line": "NEW LINE", "ko": "일반 메리제인 구두"}, {"code": "NEW_DRESS_SNEAKER", "line": "NEW LINE", "ko": "드레스 스니커"}, {"code": "NEW_MODULAR_CONVERTIBLE", "line": "NEW LINE", "ko": "모듈형·변환형"}, {"code": "NEW_NONSEASON_HYBRID", "line": "NEW LINE", "ko": "비시즌 하이브리드"}, {"code": "NEW_EMERGING_ARCHETYPE", "line": "NEW LINE", "ko": "신규 원형"}], "rules": [{"o": 1, "r": "무신사 대분류와 상품유형은 수정하지 않고 source_category/source_product_type에 저장"}, {"o": 2, "r": "퍼·쉐어링·패딩·퀼팅·보온이 핵심이면 WINTER ITEM"}, {"o": 3, "r": "샌들·슬리퍼·뮬·클로그·오픈 포맷이면 SUMMER ITEM"}, {"o": 4, "r": "폐쇄형 신발에서 러그·방수·립스탑·퀵레이스·토 보호·웨빙 중 2개 이상"}, {"o": 5, "r": "일반 메리제인 구두 또는 비시즌에 서로 다른 신발 원형이 구조적으로 결합된 유형"}, {"o": 6, "r": "sole_height_level 4 이상, sole_sculpture_level 3 이상, sole_dominance=true를 모두 충족"}, {"o": 7, "r": "메시·폼·힐 지지·토 스프링·드롭·분절 솔 중 3개 이상"}, {"o": 8, "r": "테라스·레이싱·무술·발레 원형 + 낮은 토·얇은 솔·발 밀착"}, {"o": 9, "r": "기본·코트·덩크·스케이트·캔버스 원형과 컵솔·벌커나이즈드 구조"}, {"o": 10, "r": "최고 점수 80 미만, 1·2위 차이 12 미만, 필수 구조 증거 부족 시 REVIEW_REQUIRED"}], "hard": [{"k": "liner_platform", "r": "LINER 원형과 직선·연속 솔 측벽이 유지되면 굽이 높아도 LINER"}, {"k": "liner_skate_archetype", "r": "스케이트 원형은 어퍼가 넓거나 패딩감이 있고 솔이 높아도 솔 측벽이 평평하고 연속적이면 LINER"}, {"k": "chunky_sculptural_gate", "r": "CHUNKY는 sole_height_level>=4 AND sole_sculpture_level>=3 AND sole_dominance=true를 모두 충족해야 함"}, {"k": "runner_chunky_boundary", "r": "러너 원형이라도 높은 솔의 강한 파동·요철·분절이 외곽선을 지배하면 CHUNKY. 솔 높이가 기준 미만이면 요철이 있어도 RUNNER 유지"}, {"k": "outdoor_sandal", "r": "아웃도어 샌들은 SUMMER ITEM, outdoor_attribute=true"}, {"k": "sneaker_mule", "r": "스니커즈 뮬은 SUMMER ITEM"}, {"k": "padded_fur_slipper", "r": "패딩/퍼 슬리퍼는 WINTER ITEM"}, {"k": "mary_jane", "r": "스니커즈형 메리제인은 SNEAKERS, 일반 메리제인 구두는 NEW LINE"}, {"k": "new_line_gate", "r": "일반 메리제인 구두는 NEW LINE. 그 외에는 비시즌 구조 혁신 증거가 있을 때만 NEW LINE"}]};
+const KEY = 'ffra.planning.v2';
+const CAT = {}; CFG.categories.forEach(c=>CAT[c.code]=c);
+function blank(){ return {strategy:'', items:[], labels:{}, report:null, lastAdded:[], mergeMsg:''}; }
+let S = { brand:'MLB', season:'27SS', active:'shoe', cats:{}, revFilter:'rev' };
+CFG.categories.forEach(c=> S.cats[c.code] = blank());
+let stop = false;
+/* 현재 대분류 배치 */
+const B = () => S.cats[S.active] || (S.cats[S.active] = blank());
+const isActiveCat = () => !!(CAT[S.active] && CAT[S.active].active);
+
+/* ---------------------------------------------------------- 저장 */
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
+function load(){
+  try{
+    const raw = localStorage.getItem(KEY);
+    if(raw){ const p = JSON.parse(raw); S = Object.assign(S, p);
+      CFG.categories.forEach(c=>{ if(!S.cats[c.code]) S.cats[c.code] = blank(); }); }
+    const hand = sessionStorage.getItem('ffra.batch');
+    if(!hand) return;
+    const b = JSON.parse(hand);
+    sessionStorage.removeItem('ffra.batch');
+
+    // 시즌·브랜드가 바뀌면 전체를 새로 시작할지 묻는다
+    const anyItems = Object.values(S.cats).some(c=>c.items.length);
+    if(anyItems && (S.brand !== b.brand || S.season !== b.season)){
+      if(!confirm(`기존 기획(${S.brand} ${S.season})과 다른 시즌입니다.\n` +
+                  `${b.brand} ${b.season} 로 새로 시작할까요? 기존 라벨은 지워집니다.`)) return;
+      CFG.categories.forEach(c=> S.cats[c.code] = blank());
+    }
+    S.brand = b.brand || S.brand; S.season = b.season || S.season;
+
+    // 대분류별로 갈라 담는다
+    const grouped = {};
+    (b.items||[]).forEach(it=>{
+      const c = (it.cat && CAT[it.cat]) ? it.cat : 'other';
+      (grouped[c] = grouped[c] || []).push(it);
+    });
+    Object.entries(grouped).forEach(([c, list])=>{
+      const bt = S.cats[c] || (S.cats[c] = blank());
+      const have = new Set(bt.items.map(x=>x.key));
+      const add = list.filter(x=>!have.has(x.key));
+      bt.items = bt.items.concat(add);
+      bt.lastAdded = add.map(x=>x.key);
+      bt.mergeMsg = `${add.length}건 추가` +
+        (list.length-add.length ? ` · 중복 ${list.length-add.length}건 제외` : '') +
+        ` · 총 ${bt.items.length}건`;
+      if(b.purpose && !bt.strategy) bt.strategy = b.purpose;
+    });
+    // 이번에 들어온 것 중 건수가 가장 많은 대분류로 이동
+    const top = Object.entries(grouped).sort((a,b2)=>b2[1].length-a[1].length)[0];
+    if(top) S.active = top[0];
+    save();
+  }catch(e){}
+}
+
+/* ---------------------------------------------------------- 화면 */
+function go(n){
+  document.querySelectorAll('section').forEach((s,i)=>s.classList.toggle('on', i===n));
+  document.querySelectorAll('.step').forEach((s,i)=>s.classList.toggle('on', i===n));
+  if(n===2) renderReview();
+  if(n===3){
+    const ta = document.getElementById('repStrategy');
+    ta.value = (B().report && B().report.strategy) || B().strategy || '';
+    renderReport(); paintReport();
+  }
+}
+document.getElementById('steps').onclick = e => {
+  if(e.target.classList.contains('step')) go(+e.target.dataset.s);
+};
+
+function renderCatTabs(){
+  document.getElementById('catTabs').innerHTML = CFG.categories.map(c=>{
+    const bt = S.cats[c.code] || blank();
+    const n = bt.items.length;
+    const lab = n ? `${c.ko} <b>${n}</b>` : c.ko;
+    const dim = c.active ? '' : ';opacity:.55';
+    return `<span class="step${c.code===S.active?' on':''}" data-c="${c.code}"
+      title="${c.active?c.note:'라벨링 구조 준비 중'}"
+      style="${dim}">${lab}${c.active?'':' ·'}</span>`;
+  }).join('');
+}
+document.getElementById('catTabs').onclick = e=>{
+  const t = e.target.closest('[data-c]'); if(!t) return;
+  S.active = t.dataset.c; save(); renderAll(); go(0);
+};
+function renderAll(){ renderCatTabs(); renderBatch(); }
+
+function renderBatch(){
+  const bt = B();
+  document.getElementById('fBrand').value = S.brand;
+  document.getElementById('fSeason').value = S.season;
+  document.getElementById('fPurpose').value = bt.strategy || '';
+  const added = new Set(bt.lastAdded||[]);
+  document.getElementById('cnt0').innerHTML = bt.items.length
+    ? `${bt.items.length}건` + (bt.mergeMsg?` <span style="font-size:11px;color:var(--ok)">· ${bt.mergeMsg}</span>`:'')
+    : '';
+  document.getElementById('emptyBatch').style.display = bt.items.length ? 'none' : 'block';
+  const inactive = !isActiveCat();
+  document.getElementById('catNotice').style.display = inactive && bt.items.length ? 'block' : 'none';
+  if(inactive) document.getElementById('catNotice').textContent =
+    `${CAT[S.active].ko}는 아직 라벨링 구조가 없습니다. 셀렉은 계속 쌓이고, 구조가 들어오면 그대로 분석됩니다.`;
+  document.getElementById('itemGrid').innerHTML = bt.items.map(it=>{
+    const L = bt.labels[it.key];
+    const st = !L ? '' : (L.error ? 'err' : (L.review ? 'rev' : 'ok'));
+    const txt = !L ? '' : (L.error ? '실패' : (L.review ? '검수' : '확정'));
+    return `<div class="it">${txt?`<span class="badge ${st}">${txt}</span>`:''}
+      ${added.has(it.key)&&!L?'<span class="badge" style="left:8px;right:auto;background:#eef4ef;border-color:#c9e0cb;color:var(--ok);font-weight:700">신규</span>':''}
+      <div class="ph"><img src="${it.img}" loading="lazy" alt=""
+        onerror="this.style.visibility='hidden'"></div>
+      <div class="mt"><div class="b">${it.brand||''}</div><div class="n">${it.name||''}</div>
+      ${L&&!L.error?`<div class="b">${L.line} · ${CFG.lifestyleKo[L.dna]||L.dna}</div>`:''}</div></div>`;
+  }).join('');
+  const tot = Object.values(S.cats).reduce((a,c)=>a+c.items.length,0);
+  document.getElementById('hsub').textContent =
+    `${S.brand} · ${S.season} · ${CAT[S.active].ko} ${bt.items.length}건 (전체 ${tot}건)`;
+  document.querySelectorAll('.step[data-s="1"],.step[data-s="2"],.step[data-s="3"]')
+    .forEach(el=> el.style.opacity = isActiveCat() ? '' : '.45');
+}
+document.getElementById('fBrand').addEventListener('change', e=>{ S.brand=e.target.value; save(); renderAll(); });
+document.getElementById('fSeason').addEventListener('change', e=>{ S.season=e.target.value; save(); renderAll(); });
+document.getElementById('fPurpose').addEventListener('change', e=>{ B().strategy=e.target.value; save(); });
+
+/* ---------------------------------------------------------- 프롬프트 */
+function axesSpec(){
+  let out = '';
+  for(const [g, fields] of Object.entries(CFG.axes)){
+    out += `\n[${g}]\n`;
+    for(const [f, vals] of Object.entries(fields)) out += `  ${f}: ${vals.join(' | ')}\n`;
+  }
+  return out;
+}
+function sysPrompt(){
+  return `너는 MLB 신발 기획을 돕는 상품 분석가다. 사진과 상품 정보를 보고 아래 기준으로만 판정한다.
+
+[라인 8종]
+${TAX.lines.map(l=>`- ${l.line}: ${l.def}`).join('\n')}
+
+[서브카테고리 52종]
+${TAX.subs.map(s=>`${s.code}(${s.line}/${s.ko})`).join(', ')}
+
+[우선순위 규칙 — 위에서부터 적용]
+${TAX.rules.map(r=>`${r.o}. ${r.r}`).join('\n')}
+
+[하드 오버라이드]
+${TAX.hard.map(h=>`- ${h.k}: ${h.r}`).join('\n')}
+
+[라이프스타일 4종] ${CFG.lifestyle.join(' | ')}
+
+[디자인 축 — 반드시 허용값 중에서만 고른다]${axesSpec()}
+
+판정 원칙
+- 실제 mm 를 추측하지 않는다. 시각 등급만 사용한다.
+- LOW_PROFILE 은 (낮은 미드솔 / 좁거나 길게 정리된 라스트 / 낮은 토 스프링 / 컴팩트한 힐 / 과도한 러그·플레어 없음) 다섯 중 셋 이상일 때만 인정한다.
+- 소재는 상품 메타데이터가 없으면 천연·합성을 확정하지 않고 MATERIAL_CONFIDENCE 를 낮춘다.
+- 확신이 없으면 값을 지어내지 말고 confidence 를 낮춘다.
+JSON 만 출력한다.`;
+}
+function userContent(it){
+  const imgs = (it.imgs && it.imgs.length ? it.imgs : [it.img]).slice(0,3);
+  const parts = [{type:'text', text:
+    `브랜드: ${it.brand||'-'}\n제품명: ${it.name||'-'}\n성별: ${it.gender||'-'}\n` +
+    `소재(시트): ${it.material||'-'}\n컬러(시트): ${it.color||'-'}\n` +
+    `\n아래 형식의 JSON 만 출력:\n` +
+    `{"line":"라인","subcategory":"코드","line_confidence":0-100,` +
+    `"dna":"라이프스타일","dna_scores":{"WELLNESS":0-100,"PREMIUM SPORTIVE":0-100,"FEMININE":0-100,"STREET":0-100},` +
+    `"axes":{축이름:값,...},"season_fit":{"SS":0-5,"FW":0-5},"rationale":"한 줄 근거"}`}];
+  imgs.forEach(u=> parts.push({type:'image_url', image_url:{url:u, detail:'high'}}));
+  return parts;
+}
+
+/* ---------------------------------------------------------- 라벨링 */
+const logEl = document.getElementById('log');
+function log(m){ logEl.textContent = (new Date().toTimeString().slice(0,8)+'  '+m+'\n') + logEl.textContent; }
+function setProg(p){ document.getElementById('prog').style.width = p+'%'; }
+
+function mockLabel(it){
+  const pick = a => a[Math.floor(Math.random()*a.length)];
+  const axes = {};
+  for(const fields of Object.values(CFG.axes))
+    for(const [f, vals] of Object.entries(fields)) axes[f] = pick(vals);
+  const sc = {}; CFG.lifestyle.forEach(d=> sc[d] = Math.round(35+Math.random()*45));
+  const top = Object.entries(sc).sort((a,b)=>b[1]-a[1]);
+  return { line: pick(CFG.lines), subcategory: pick(TAX.subs).code,
+    line_confidence: Math.round(60+Math.random()*40), dna: top[0][0], dna_scores: sc,
+    axes, season_fit:{SS:Math.round(Math.random()*5), FW:Math.round(Math.random()*5)},
+    rationale:'시험 실행으로 생성된 값입니다' };
+}
+function finalize(key, L){
+  const bt = B();
+  const sorted = Object.entries(L.dna_scores||{}).sort((a,b)=>b[1]-a[1]);
+  L.gap = sorted.length>1 ? sorted[0][1]-sorted[1][1] : 99;
+  L.review = !(L.line_confidence>=75 && L.gap>=10);
+  bt.labels[key] = L;
+}
+
+async function callOne(it, key, model){
+  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+    body: JSON.stringify({ model, max_tokens:1400, response_format:{type:'json_object'},
+      messages:[{role:'system',content:sysPrompt()},{role:'user',content:userContent(it)}] })
+  });
+  if(!res.ok) throw new Error('HTTP '+res.status+' '+(await res.text()).slice(0,140));
+  const d = await res.json();
+  return JSON.parse(d.choices[0].message.content);
+}
+
+async function run(mock){
+  const key = document.getElementById('fKey').value.trim();
+  const model = document.getElementById('fModel').value.trim() || 'gpt-4.1';
+  const conc = +document.getElementById('fConc').value;
+  if(!mock && !key){ log('API 키를 입력하세요. 키 없이 흐름만 보시려면 [키 없이 시험 실행]을 누르세요.'); return; }
+  if(!isActiveCat()){ log(`${CAT[S.active].ko}는 라벨링 구조가 없습니다. 신발부터 진행하세요.`); return; }
+  if(!B().items.length){ log('대상 아이템이 없습니다.'); return; }
+
+  stop = false;
+  document.getElementById('btnRun').disabled = true;
+  document.getElementById('btnMock').disabled = true;
+  document.getElementById('btnStop').disabled = false;
+  logEl.textContent = '';
+  const scope = document.getElementById('fScope').value;
+  const bt = B();
+  const queue = scope === 'new' ? bt.items.filter(it=>!bt.labels[it.key]) : bt.items.slice();
+  const total = queue.length;
+  if(!total){
+    log('라벨링할 대상이 없습니다. [전체 다시]를 고르면 재실행합니다.');
+    document.getElementById('btnRun').disabled=false;
+    document.getElementById('btnMock').disabled=false;
+    document.getElementById('btnStop').disabled=true;
+    return;
+  }
+  log(`${total}건 시작 · ${mock?'시험 모드':model}` +
+      (scope==='new' && total<bt.items.length ? ` (이미 라벨된 ${bt.items.length-total}건 제외)` : ''));
+
+  let done = 0, fail = 0;
+  async function worker(){
+    while(queue.length && !stop){
+      const it = queue.shift();
+      try{
+        const L = mock ? (await new Promise(r=>setTimeout(()=>r(mockLabel(it)), 120)))
+                       : await callOne(it, key, model);
+        finalize(it.key, L);
+        log(`${it.brand} ${it.name} → ${L.line} · ${L.dna}${L.review?' (검수)':''}`);
+      }catch(e){
+        bt.labels[it.key] = { error: String(e.message||e) }; fail++;
+        log(`실패 · ${it.brand} ${it.name} · ${String(e.message||e).slice(0,90)}`);
+      }
+      done++; setProg(Math.round(done/total*100)); save(); renderAll();
+    }
+  }
+  await Promise.all(Array.from({length:conc}, worker));
+  log(`완료 · 성공 ${done-fail} · 실패 ${fail}` + (stop?' · 중지됨':''));
+  document.getElementById('btnRun').disabled = false;
+  document.getElementById('btnMock').disabled = false;
+  document.getElementById('btnStop').disabled = true;
+  document.querySelector('.step[data-s="1"]').classList.add('done');
+}
+document.getElementById('btnRun').onclick = ()=>run(false);
+document.getElementById('btnMock').onclick = ()=>run(true);
+document.getElementById('btnStop').onclick = ()=>{ stop = true; log('중지 요청'); };
+
+/* ---------------------------------------------------------- 검수 */
+function renderReview(){
+  const bt = B();
+  const rows = bt.items.filter(it=>{
+    const L = bt.labels[it.key];
+    if(!L) return false;
+    return S.revFilter==='all' ? true : (L.review || L.error);
+  });
+  document.getElementById('cnt2').textContent =
+    `검수 필요 ${bt.items.filter(i=>bt.labels[i.key]&&(bt.labels[i.key].review||bt.labels[i.key].error)).length}건` +
+    ` / 라벨 ${Object.keys(bt.labels).length}건`;
+  if(!rows.length){
+    document.getElementById('reviewWrap').innerHTML =
+      '<div class="empty">해당하는 항목이 없습니다. 먼저 라벨링을 실행하세요.</div>'; return;
+  }
+  const axFlat = [];
+  for(const [g,f] of Object.entries(CFG.axes)) for(const [k,v] of Object.entries(f)) axFlat.push([k,v]);
+  document.getElementById('reviewWrap').innerHTML =
+    `<table class="rv"><thead><tr><th>사진</th><th>상품</th><th>라인</th><th>라이프스타일</th><th>디자인 축</th></tr></thead><tbody>` +
+    rows.map(it=>{
+      const L = bt.labels[it.key];
+      if(L.error) return `<tr><td><img src="${it.img}" alt=""></td>
+        <td><b>${it.brand}</b><br>${it.name}</td>
+        <td colspan="3" style="color:var(--accent)">실패 · ${L.error}</td></tr>`;
+      return `<tr data-k="${it.key}">
+        <td><img src="${it.img}" alt="" onerror="this.style.visibility='hidden'"></td>
+        <td><b>${it.brand}</b><br>${it.name}
+          <div style="color:var(--sub);font-size:10.5px;margin-top:4px">${L.rationale||''}</div></td>
+        <td><select data-f="line">${CFG.lines.map(l=>`<option${l===L.line?' selected':''}>${l}</option>`).join('')}</select>
+          <div style="font-size:10px;color:var(--sub);margin-top:3px">신뢰도 ${L.line_confidence??'-'}</div></td>
+        <td><select data-f="dna">${CFG.lifestyle.map(d=>`<option${d===L.dna?' selected':''}>${d}</option>`).join('')}</select>
+          <div style="font-size:10px;color:var(--sub);margin-top:3px">격차 ${L.gap??'-'}</div></td>
+        <td><div class="axes">${axFlat.map(([k,vals])=>`<div class="ax"><label>${k}</label>
+          <select data-ax="${k}">${vals.map(v=>`<option${v===(L.axes||{})[k]?' selected':''}>${v}</option>`).join('')}</select>
+          </div>`).join('')}</div></td></tr>`;
+    }).join('') + '</tbody></table>';
+}
+document.getElementById('reviewWrap').addEventListener('change', e=>{
+  const tr = e.target.closest('tr[data-k]'); if(!tr) return;
+  const L = B().labels[tr.dataset.k];
+  if(e.target.dataset.f==='line') L.line = e.target.value;
+  else if(e.target.dataset.f==='dna') L.dna = e.target.value;
+  else if(e.target.dataset.ax){ L.axes = L.axes||{}; L.axes[e.target.dataset.ax] = e.target.value; }
+  L.review = false; L.confirmed = true; save(); renderAll();
+});
+document.getElementById('fltAll').onclick = ()=>{ S.revFilter='all'; renderReview(); };
+document.getElementById('fltRev').onclick = ()=>{ S.revFilter='rev'; renderReview(); };
+
+/* ---------------------------------------------------------- 리포트 */
+function renderReport(){
+  const bt = B();
+  const ok = bt.items.map(i=>bt.labels[i.key]).filter(l=>l && !l.error);
+  document.getElementById('repSub').textContent =
+    `${S.brand} · ${S.season} · ${CAT[S.active].ko} · 라벨 ${ok.length}건 (검수 확정 ${ok.filter(l=>l.confirmed).length}건)`;
+  if(!ok.length){ document.getElementById('repDist').innerHTML =
+    '<div class="empty">라벨링 결과가 없습니다.</div>'; document.getElementById('repFind').innerHTML=''; return; }
+
+  const counts = (fn)=>{ const m={}; ok.forEach(l=>{const v=fn(l); if(v!=null) m[v]=(m[v]||0)+1;}); return m; };
+  const box = (title, m)=>{
+    const mx = Math.max(...Object.values(m), 1);
+    return `<div class="box"><h4>${title}</h4>${
+      Object.entries(m).sort((a,b)=>b[1]-a[1]).map(([k,v])=>
+        `<div class="r"><span>${k}</span><span class="b2"><i style="width:${v/mx*100}%"></i></span><b>${v}</b></div>`
+      ).join('')}</div>`;
+  };
+  const keyAxes = ['PROFILE','SOLE_HEIGHT','TOE_SHAPE','VAMP_COVERAGE','UPPER_PRIMARY_MATERIAL',
+                   'CLOSURE_TYPE','LOGO_TYPE','PATTERN_TYPE'];
+  document.getElementById('repDist').innerHTML =
+    box('라인', counts(l=>l.line)) +
+    box('라이프스타일', counts(l=>CFG.lifestyleKo[l.dna]||l.dna)) +
+    keyAxes.filter(a=>ok.some(l=>(l.axes||{})[a])).map(a=>box(a, counts(l=>(l.axes||{})[a]))).join('');
+
+  const n = ok.length, f = [];
+  const cnt = (a,v)=> ok.filter(l=>(l.axes||{})[a]===v).length;
+  const low = cnt('PROFILE','ULTRA_LOW')+cnt('PROFILE','LOW');
+  if(low) f.push(`저상(ULTRA_LOW·LOW) <b>${low}건 / ${n}건 (${Math.round(low/n*100)}%)</b>`);
+  const thin = cnt('SOLE_HEIGHT','ULTRA_THIN')+cnt('SOLE_HEIGHT','THIN');
+  if(thin) f.push(`얇은 솔(ULTRA_THIN·THIN) <b>${thin}건 (${Math.round(thin/n*100)}%)</b>`);
+  const mono = ok.filter(l=>['MONOGRAM','MONOGRAM_ALLOVER'].includes((l.axes||{}).LOGO_TYPE)
+              || (l.axes||{}).PATTERN_TYPE==='MONOGRAM_ALLOVER').length;
+  if(mono) f.push(`모노그램 적용 <b>${mono}건 (${Math.round(mono/n*100)}%)</b>`);
+  const animal = cnt('PATTERN_TYPE','ANIMAL');
+  if(animal) f.push(`애니멀 패턴 <b>${animal}건</b>`);
+  const strap = ok.filter(l=>(l.axes||{}).STRAP_PRESENT==='TRUE').length;
+  if(strap) f.push(`스트랩 있음 <b>${strap}건 (${Math.round(strap/n*100)}%)</b>`);
+  document.getElementById('repFind').innerHTML = f.length
+    ? '<ul style="margin:0;padding-left:18px">' + f.map(x=>`<li>${x}</li>`).join('') + '</ul>'
+    : '<span style="color:var(--sub)">아직 집계할 값이 부족합니다.</span>';
+}
+
+/* ---------------------------------------------------------- 전략 리포트 */
+function labeledItems(){
+  const bt = B();
+  return bt.items.map(it=>({it, L:bt.labels[it.key]})).filter(x=>x.L && !x.L.error);
+}
+function evidencePack(){
+  const rows = labeledItems();
+  const axKeys = [];
+  for(const g of Object.values(CFG.axes)) for(const k of Object.keys(g)) axKeys.push(k);
+  return rows.map(({it,L},i)=>({
+    no: i+1, brand: it.brand, name: it.name,
+    line: L.line, sub: L.subcategory, dna: L.dna,
+    axes: axKeys.reduce((o,k)=>{ const v=(L.axes||{})[k]; if(v && v!=='NONE') o[k]=v; return o; }, {})
+  }));
+}
+function repLog(m){
+  const el=document.getElementById('repLog');
+  el.textContent = (new Date().toTimeString().slice(0,8)+'  '+m+'\n')+el.textContent;
+}
+
+const REP_SCHEMA = `{
+ "verdict":"셀렉 전체가 전략에 부합하는지 2~3문장",
+ "fit":[{"no":번호,"score":0-100,"why":"한 줄"}],
+ "off":[{"no":번호,"why":"전략과 어긋나는 이유 한 줄"}],
+ "directions":[{"title":"방향 제목","detail":"2~3문장","evidence":"셀렉 근거 수치"}],
+ "details":[{"axis":"축이름","value":"권장값","why":"왜"}],
+ "avoid":["피해야 할 것"],
+ "slots":[{"line":"라인","dna":"라이프스타일","count":개수,"role":"VOLUME|TREND|CAPSULE","spec":"핵심 사양 한 줄"}]
+}`;
+
+async function makeReport(mock){
+  const strat = document.getElementById('repStrategy').value.trim();
+  const rows = evidencePack();
+  if(!rows.length){ repLog('라벨링된 아이템이 없습니다.'); return; }
+  if(!strat){ repLog('전략 방향성을 먼저 적어주세요.'); return; }
+  const key = document.getElementById('fKey').value.trim();
+  const model = document.getElementById('fModel').value.trim() || 'gpt-4.1';
+  if(!mock && !key){ repLog('2단계에서 API 키를 입력하거나 [키 없이 시험]을 쓰세요.'); return; }
+
+  document.getElementById('btnRep').disabled = true;
+  document.getElementById('btnRepMock').disabled = true;
+  repLog(`${rows.length}건 기준으로 작성 중`);
+  try{
+    let R;
+    if(mock){
+      await new Promise(r=>setTimeout(r,700));
+      const pick=a=>a[Math.floor(Math.random()*a.length)];
+      R = { verdict:'시험 실행으로 생성된 예시입니다. 실제 판단이 아닙니다.',
+        fit: rows.slice(0,3).map(r=>({no:r.no,score:70+Math.floor(Math.random()*25),why:'전략 축과 겹침'})),
+        off: rows.slice(-1).map(r=>({no:r.no,why:'전략 방향과 결이 다름'})),
+        directions:[{title:'예시 방향',detail:'전략 문장을 반영한 방향이 여기 나옵니다.',evidence:`${rows.length}건 기준`}],
+        details:[{axis:'SOLE_HEIGHT',value:pick(['THIN','ULTRA_THIN']),why:'예시'},
+                 {axis:'UPPER_PRIMARY_MATERIAL',value:'SUEDE_LIKE',why:'예시'}],
+        avoid:['예시 회피 항목'],
+        slots:[{line:'SUMMER ITEM',dna:'WELLNESS',count:3,role:'VOLUME',spec:'예시 사양'}] };
+    }else{
+      const res = await fetch('https://api.openai.com/v1/chat/completions',{
+        method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+        body: JSON.stringify({ model, max_tokens:2600, response_format:{type:'json_object'},
+          messages:[
+            {role:'system', content:
+              `너는 ${S.brand} ${S.season} 시즌 ${CAT[S.active].ko} 기획을 돕는 상품기획자다.\n` +
+              `담당자가 정한 전략 방향성에 맞추어, 셀렉된 레퍼런스를 해석하고 전개 방향과 디자인 디테일을 제안한다.\n\n` +
+              `원칙\n` +
+              `- 셀렉된 목록 안에서만 근거를 든다. 목록에 없는 제품을 지어내지 않는다.\n` +
+              `- 방향과 디테일은 반드시 몇 건 중 몇 건인지 수치로 뒷받침한다.\n` +
+              `- 전략과 어긋나는 셀렉이 있으면 off 에 솔직히 적는다.\n` +
+              `- details 의 axis 와 value 는 아래 허용값에서만 고른다.${axesSpec()}\n` +
+              `- 라이프스타일은 ${CFG.lifestyle.join(' | ')}, 라인은 ${CFG.lines.join(' | ')} 만 쓴다.\n\n` +
+              `다음 JSON 형식으로만 답한다.\n${REP_SCHEMA}`},
+            {role:'user', content:
+              `[전략 방향성]\n${strat}\n\n[셀렉 레퍼런스 ${rows.length}건]\n` +
+              rows.map(r=>`${r.no}. ${r.brand} ${r.name} | ${r.line}/${r.sub} | ${r.dna} | ` +
+                Object.entries(r.axes).map(([k,v])=>k+'='+v).join(' ')).join('\n')}
+          ]})});
+      if(!res.ok) throw new Error('HTTP '+res.status+' '+(await res.text()).slice(0,160));
+      R = JSON.parse((await res.json()).choices[0].message.content);
+    }
+    B().report = {at:new Date().toISOString(), strategy:strat, data:R, n:rows.length};
+    B().strategy = strat; save(); paintReport();
+    repLog('완료');
+  }catch(e){ repLog('실패 · '+String(e.message||e).slice(0,140)); }
+  document.getElementById('btnRep').disabled = false;
+  document.getElementById('btnRepMock').disabled = false;
+}
+
+function paintReport(){
+  const rep = B().report; const out = document.getElementById('repOut');
+  if(!rep){ out.style.display='none'; return; }
+  out.style.display='';
+  const R = rep.data, rows = evidencePack();
+  const nameOf = no => { const r = rows.find(x=>x.no===no); return r ? `${r.brand} ${r.name}` : `#${no}`; };
+  const sec = (t,b)=> b ? `<h3 style="font-size:13px;margin:20px 0 8px">${t}</h3>${b}` : '';
+  document.getElementById('repSub').textContent =
+    `${S.brand} · ${S.season} · ${CAT[S.active].ko} · 셀렉 ${rep.n}건 · ${new Date(rep.at).toLocaleString('ko-KR')}`;
+  document.getElementById('repBody').innerHTML =
+    `<div style="font-size:13.5px;line-height:1.8;background:#faf7f2;border:1px solid var(--line);
+      border-radius:10px;padding:13px 15px">${R.verdict||''}</div>` +
+    sec('전개 방향', (R.directions||[]).map(d=>
+      `<div style="border-left:2px solid var(--gold);padding:2px 0 2px 12px;margin-bottom:13px">
+        <b style="font-size:13px">${d.title}</b>
+        <div style="font-size:12.5px;line-height:1.75;margin-top:4px">${d.detail}</div>
+        <div style="font-size:11.5px;color:var(--sub);margin-top:4px">근거 · ${d.evidence||''}</div></div>`).join('')) +
+    sec('디자인 디테일', (R.details||[]).length
+      ? `<table class="rv"><thead><tr><th>축</th><th>권장값</th><th>근거</th></tr></thead><tbody>` +
+        R.details.map(d=>`<tr><td><b>${d.axis}</b></td><td>${d.value}</td>
+          <td style="color:var(--sub)">${d.why||''}</td></tr>`).join('') + '</tbody></table>' : '') +
+    sec('슬롯 제안', (R.slots||[]).length
+      ? `<table class="rv"><thead><tr><th>라인</th><th>라이프스타일</th><th>수</th><th>역할</th><th>핵심 사양</th></tr></thead><tbody>` +
+        R.slots.map(s=>`<tr><td>${s.line}</td><td>${CFG.lifestyleKo[s.dna]||s.dna}</td>
+          <td><b>${s.count}</b></td><td>${s.role||''}</td><td>${s.spec||''}</td></tr>`).join('') + '</tbody></table>' : '') +
+    sec('전략 부합 상위', (R.fit||[]).length
+      ? '<ul style="margin:0;padding-left:18px;font-size:12.5px;line-height:1.9">' +
+        R.fit.map(f=>`<li><b>${nameOf(f.no)}</b> <span style="color:var(--ok)">${f.score}</span> — ${f.why||''}</li>`).join('') + '</ul>' : '') +
+    sec('전략과 어긋남', (R.off||[]).length
+      ? '<ul style="margin:0;padding-left:18px;font-size:12.5px;line-height:1.9;color:#8a6a2e">' +
+        R.off.map(f=>`<li><b>${nameOf(f.no)}</b> — ${f.why||''}</li>`).join('') + '</ul>' : '') +
+    sec('피할 것', (R.avoid||[]).length
+      ? '<ul style="margin:0;padding-left:18px;font-size:12.5px;line-height:1.9">' +
+        R.avoid.map(a=>`<li>${a}</li>`).join('') + '</ul>' : '');
+}
+
+document.getElementById('btnRep').onclick = ()=>makeReport(false);
+document.getElementById('btnRepMock').onclick = ()=>makeReport(true);
+document.getElementById('btnRepCopy').onclick = ()=>{
+  const t = document.getElementById('repOut').innerText;
+  navigator.clipboard.writeText(t).then(()=>repLog('복사했습니다')).catch(()=>repLog('복사 실패'));
+};
+
+/* ---------------------------------------------------------- 내보내기 */
+document.getElementById('btnSave').onclick = ()=>{ save(); alert('저장했습니다.'); };
+document.getElementById('btnExp').onclick = ()=>{
+  const axFlat = [];
+  for(const g of Object.values(CFG.axes)) for(const k of Object.keys(g)) axFlat.push(k);
+  const head = ['item_key','brand','product_name','image_url','line','subcategory','line_confidence',
+                'dna','dna_gap','confirmed','season_SS','season_FW', ...axFlat];
+  const esc = v => '"'+String(v==null?'':v).replace(/"/g,'""')+'"';
+  const bt = B();
+  const body = bt.items.map(it=>{
+    const L = bt.labels[it.key] || {};
+    return [it.key,it.brand,it.name,it.img,L.line,L.subcategory,L.line_confidence,
+      L.dna,L.gap,L.confirmed?'Y':'',(L.season_fit||{}).SS,(L.season_fit||{}).FW,
+      ...axFlat.map(a=>(L.axes||{})[a])].map(esc).join(',');
+  });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['\ufeff'+[head.join(',')].concat(body).join('\n')],
+    {type:'text/csv;charset=utf-8'}));
+  a.download = `기획라벨_${S.brand}_${S.season}_${S.active}_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click(); URL.revokeObjectURL(a.href);
+};
+
+document.getElementById('btnDemo').onclick = ()=>{
+  S.active = 'shoe';
+  B().items = [
+    {key:'d1', cat:'shoe', brand:'MIU MIU', name:'Satin Slipper Mule', img:'', material:'satin'},
+    {key:'d2', cat:'shoe', brand:'THE ROW', name:'Woven Mule', img:'', material:'raffia'},
+    {key:'d3', cat:'shoe', brand:'GANNI', name:'Jenny Ballerina Leopard Mesh', img:'', material:'nylon mesh'},
+    {key:'d4', cat:'shoe', brand:'LOUIS VUITTON', name:'LV Oasis Mule', img:'', material:'grained calf'},
+    {key:'d5', cat:'shoe', brand:'CELINE', name:'ADAM Loafer with Triomphe', img:'', material:'suede calfskin'},
+  ];
+  save(); renderAll();
+};
+
+load(); renderAll();
+</script></body></html>
