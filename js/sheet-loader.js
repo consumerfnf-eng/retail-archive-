@@ -113,6 +113,7 @@ if (seasonMatch) {
     data.push({
       _id: `s${sheetIndex}-${i}`,
       _sheetLabel: sheetCfg.label,
+      _sheetRow: i + 2,
       month: season,
       season: season,
       country: country,
