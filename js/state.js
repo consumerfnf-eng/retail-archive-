@@ -44,6 +44,7 @@ const state = {
     Brands: true,
     Categories: true,
     Subcategories: false,
+    Keywords: true,
     Fabric: false
   },
   brandGroupsOpen: new Set(),

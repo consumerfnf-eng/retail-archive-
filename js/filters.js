@@ -21,7 +21,7 @@ function genderScope() {
   if (!matchers.length) return base;
   return base.filter(d => {
     for (let i = 0; i < matchers.length; i++) {
-      if (kwMatchOne(d.product_name, matchers[i])) return true;   // 그룹끼리는 OR
+      if (kwMatchRow(d, matchers[i])) return true;   // 그룹끼리는 OR
     }
     return false;
   });
@@ -147,6 +147,7 @@ function buildFacets() {
             {id:"Brands",       title:"Brands",               key:"brand",       set:state.brands,                           scope: countryFilteredScope},
             {id:"Categories",   title:"Item Categories",      key:"category",    set:state.categories,                       scope: brandFilteredScope},
             {id:"Subcategories",title:"Sub-categories",       key:"subcategory", set:state.subcategories,                    scope: categoryFilteredScope},
+            {id:"Keywords",     title:"Keywords · 제품명",    key:"__keyword",   set:state.kwActive,                         scope: scope},
             {id:"Fabric",       title:"Fabric · 소재",        key:"fabric",      set:state.fabrics,                          scope: periodFilteredScope},
                   ];
 
@@ -213,6 +214,30 @@ function buildFacets() {
         <span class="cnt">${totalCount}</span>
       </div>`;
 
+    } else if (def.id === "Keywords") {
+      const groups = state.kwGroups || [];
+      if (!groups.length) {
+        body = '<div style="font-size:11px;color:var(--ink-soft);padding:6px 4px;line-height:1.55">저장된 키워드가 없습니다.<br>상단 검색창에 키워드를 넣고<br>“그룹 저장”을 누르세요.</div>';
+      } else {
+        const kwBase = genderScopeRaw();
+        body = groups.map(g => {
+          const on = state.kwActive.has(g.id);
+          const editing = state.kwEditing === g.id;
+          const n = (typeof kwCount === "function") ? kwCount(g, kwBase) : 0;
+          return `<div class="opt kwopt ${on?'on':''} ${editing?'editing':''}" data-facet="Keywords" data-val="${esc(g.id)}"
+                       title="${esc((g.include || []).join(', '))}">
+            <span class="box"></span>
+            <span class="lbl">${esc(g.label)}</span>
+            <span class="cnt">${n}</span>
+            <span class="kwopt-btn" data-kwedit="${esc(g.id)}" title="키워드 수정">✎</span>
+            <span class="kwopt-btn kwopt-del" data-kwdel="${esc(g.id)}" title="이 그룹 삭제">×</span>
+          </div>`;
+        }).join("");
+        if (state.kwActive.size || (state.kwQuery || '').trim()) {
+          body += `<div class="kwopt-clear" id="kwFacetClear">키워드 선택 해제</div>`;
+        }
+      }
+
     } else {
       // 일반 facet - 각 def.scope 사용
       const counts = facetCounts(def.scope, def.key);
@@ -266,6 +291,7 @@ function buildFacets() {
       Brands: state.brands,
       Categories: state.categories,
       Subcategories: state.subcategories,
+      Keywords: state.kwActive,
       Fabric: state.fabrics
     })[fid];
     if (!set) return;
@@ -295,6 +321,31 @@ function buildFacets() {
     state.drillDown = null;
     render();
   });
+
+  // 키워드 그룹 수정 / 삭제
+  $$("#facets [data-kwedit]").forEach(b => b.onclick = (e) => {
+    e.stopPropagation();
+    if (typeof kwBeginEdit === "function") kwBeginEdit(b.dataset.kwedit);
+  });
+  $$("#facets [data-kwdel]").forEach(b => b.onclick = (e) => {
+    e.stopPropagation();
+    const id = b.dataset.kwdel;
+    const g = (state.kwGroups || []).find(x => x.id === id);
+    if (!g) return;
+    if (!confirm(`"${g.label}" 키워드 그룹을 삭제할까요?`)) return;
+    state.kwGroups = state.kwGroups.filter(x => x.id !== id);
+    state.kwActive.delete(id);
+    if (state.kwEditing === id && typeof kwCancelEdit === "function") kwCancelEdit(true);
+    if (typeof kwPersist === "function") kwPersist();
+    state.page = 1;
+    render();
+  });
+
+  const kwfc = $("#kwFacetClear");
+  if (kwfc) kwfc.onclick = (e) => {
+    e.stopPropagation();
+    if (typeof kwClearAll === "function") kwClearAll();
+  };
 
   // 브랜드 그룹 펼치기/접기
   $$(".bgroup-top [data-bgtoggle]").forEach(el => el.onclick = (e) => {
@@ -351,32 +402,13 @@ function buildCrumbs() {
         ${fmt ? fmt(v) : esc(v)}<span class="x">×</span></span>`);
     });
   });
-  // 제품명 키워드 검색 crumbs
-  const kwq = (state.kwQuery || "").trim();
-  if (kwq) {
-    c.push(`<span class="crumb kw" data-kind="kwq" data-val="1">검색: ${esc(kwq)}<span class="x">×</span></span>`);
-  }
-  (state.kwActive ? [...state.kwActive] : []).forEach(id => {
-    const g = (state.kwGroups || []).find(x => x.id === id);
-    if (g) c.push(`<span class="crumb kw" data-kind="kw" data-val="${esc(id)}">${esc(g.label)}<span class="x">×</span></span>`);
-  });
-
+  // 키워드 그룹은 crumbs 대신 사이드바 Keywords 섹션에서 표시/해제한다
   $("#crumbs").innerHTML = c.join("");
   $$('#crumbs .crumb[data-kind]').forEach(cr => {
     cr.querySelector(".x").onclick = () => {
       const k = cr.dataset.kind;
       const v = cr.dataset.val;
-      if (k === "kwq") {
-        state.kwQuery = "";
-        const inp = $("#kwInput");
-        if (inp) inp.value = "";
-        state.page = 1;
-        state.drillDown = null;
-        render();
-        return;
-      }
       ({
-        kw:         state.kwActive,
         month:      state.months,
         country:    state.countries,
         brandGroup: state.brandGroups,

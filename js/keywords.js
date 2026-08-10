@@ -21,19 +21,59 @@ const DEFAULT_KEYWORD_GROUPS = [
 
 /* ============================================
    정규화 & 매칭
+
+   [매칭 규칙]
+   - 영문 단어 하나 (WIND, VEST, BOMBER)  -> 단어 시작 기준 매칭
+       WIND  ○ Windbreaker / Wind Jacket   × Small E/W India Bag, Rewind
+       VEST  ○ Puffer Vest                 × Investment, Harvest
+       BOMBER ○ Bombers, Suede Bomber (뒤에 붙는 건 계속 잡힘)
+   - 한글 키워드 (패딩, 봄버)             -> 위치 무관 매칭 (롱패딩 같은 붙임말 대응)
+   - 띄어쓰기·기호 포함 (MA-1, FLIGHT JACKET) -> 기호 무시하고 매칭 (MA1 = MA-1 = MA 1)
+   - 앞에 * 를 붙이면 강제로 위치 무관 매칭 (*TEEN -> Velveteen 도 잡음)
    ============================================ */
 
-/* 대소문자·공백·기호를 모두 제거해 비교
-   "MA-1 Bomber" -> "MA1BOMBER", "Bomber Jacket" -> "BOMBERJACKET" */
-function kwNorm(s) {
+/* 구분자를 공백으로 바꾼 대문자 형태: "MA-1 Bomber" -> "MA 1 BOMBER" */
+function kwSpaced(s) {
   return (s == null ? '' : String(s))
     .toUpperCase()
-    .replace(/[\s\-_.,'"`~!@#$%^&*()+=/\\[\]{}|;:<>?]/g, '');
+    .replace(/[\s\-_.,'"`~!@#$%^&*()+=/\\[\]{}|;:<>?·・]+/g, ' ')
+    .trim();
+}
+
+/* 공백까지 제거한 형태: "MA 1 BOMBER" -> "MA1BOMBER" */
+function kwGlued(s) {
+  return kwSpaced(s).replace(/ /g, '');
+}
+
+/* 하위 호환용 (예전 이름) */
+function kwNorm(s) { return kwGlued(s); }
+
+function kwEscRe(s) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/* 키워드 하나 -> 매처 term */
+function kwCompileTerm(raw) {
+  let t = String(raw == null ? '' : raw).trim();
+  let loose = false;
+  if (t[0] === '*') { loose = true; t = t.slice(1).trim(); }
+  const spaced = kwSpaced(t);
+  if (!spaced) return null;
+  const glued = spaced.replace(/ /g, '');
+
+  const hasHangul = /[가-힣ㄱ-ㅎㅏ-ㅣ]/.test(spaced);
+  const hasCJK    = /[\u3040-\u30ff\u4e00-\u9fff]/.test(spaced);
+  const multiWord = spaced.indexOf(' ') !== -1;
+
+  // 한글/CJK, 여러 단어, * 지정 -> 위치 무관
+  if (loose || hasHangul || hasCJK || multiWord) return { mode: 'sub', glued };
+  // 영문 단어 하나 -> 단어 시작 기준
+  return { mode: 'word', glued, re: new RegExp('(^| )' + kwEscRe(glued)) };
 }
 
 /* 입력 문자열 -> {include:[], exclude:[]}
    쉼표 또는 줄바꿈 구분. 앞에 - 또는 ! 를 붙이면 제외 키워드.
-   예) "BOMBER, 봄버, MA-1, -BOMBER BAG" */
+   예) "DOWN, 다운, PUFFER, MA-1, -DOWNTOWN" */
 function kwParse(str) {
   const include = [], exclude = [];
   String(str || '').split(/[,\n]/).forEach(tok => {
@@ -51,18 +91,39 @@ function kwParse(str) {
 /* 그룹 -> 정규화된 매처 (한 번만 만들어 재사용) */
 function kwCompile(g) {
   return {
-    inc: (g.include || []).map(kwNorm).filter(Boolean),
-    exc: (g.exclude || []).map(kwNorm).filter(Boolean)
+    inc: (g.include || []).map(kwCompileTerm).filter(Boolean),
+    exc: (g.exclude || []).map(kwCompileTerm).filter(Boolean)
   };
 }
 
-/* 제품명 하나를 매처 하나와 대조 */
+function kwTermHit(term, spaced, glued) {
+  return term.mode === 'sub'
+    ? glued.indexOf(term.glued) !== -1
+    : term.re.test(spaced);
+}
+
+/* 제품명 문자열 하나를 매처와 대조 */
 function kwMatchOne(name, m) {
-  const n = kwNorm(name);
-  if (!n || !m || !m.inc.length) return false;
-  for (let i = 0; i < m.exc.length; i++) if (n.indexOf(m.exc[i]) !== -1) return false;
-  for (let i = 0; i < m.inc.length; i++) if (n.indexOf(m.inc[i]) !== -1) return true;
+  const spaced = kwSpaced(name);
+  if (!spaced) return false;
+  return kwMatchNormalized(spaced, spaced.replace(/ /g, ''), m);
+}
+
+function kwMatchNormalized(spaced, glued, m) {
+  if (!m || !m.inc.length) return false;
+  for (let i = 0; i < m.exc.length; i++) if (kwTermHit(m.exc[i], spaced, glued)) return false;
+  for (let i = 0; i < m.inc.length; i++) if (kwTermHit(m.inc[i], spaced, glued)) return true;
   return false;
+}
+
+/* 데이터 행 대조 - 정규화 결과를 행에 캐시해 두고 재사용 */
+function kwMatchRow(d, m) {
+  if (d._kwS === undefined) {
+    d._kwS = kwSpaced(d.product_name);
+    d._kwG = d._kwS.replace(/ /g, '');
+  }
+  if (!d._kwS) return false;
+  return kwMatchNormalized(d._kwS, d._kwG, m);
 }
 
 /* 현재 활성화된 매처 목록 (임시 검색어 + 선택된 그룹, 서로 OR)
@@ -94,7 +155,7 @@ function kwCount(g, baseScope) {
   const m = kwCompile(g);
   if (!m.inc.length) return 0;
   let n = 0;
-  for (let i = 0; i < base.length; i++) if (kwMatchOne(base[i].product_name, m)) n++;
+  for (let i = 0; i < base.length; i++) if (kwMatchRow(base[i], m)) n++;
   return n;
 }
 
@@ -141,66 +202,9 @@ function kwToInputString(g) {
    UI - 칩 렌더
    ============================================ */
 
-function renderKeywordChips() {
-  const box = $("#kwGroups");
-  if (!box) return;
-
-  const base = (typeof genderScopeRaw === 'function') ? genderScopeRaw() : RETAIL_DATA;
-  const groups = state.kwGroups || [];
-
-  const chips = groups.map(g => {
-    const on = state.kwActive.has(g.id);
-    const editing = state.kwEditing === g.id;
-    const n = kwCount(g, base);
-    return `<span class="kw-chip ${on ? 'on' : ''} ${editing ? 'editing' : ''}" data-kw="${esc(g.id)}" title="${esc((g.include || []).join(', '))}">
-      <span class="kw-chip-label">${esc(g.label)}</span>
-      <span class="kw-chip-cnt">${n}</span>
-      <span class="kw-chip-btn kw-chip-edit" data-kwedit="${esc(g.id)}" title="이 그룹 수정">✎</span>
-      <span class="kw-chip-btn kw-chip-del" data-kwdel="${esc(g.id)}" title="이 그룹 삭제">×</span>
-    </span>`;
-  }).join("");
-
-  const clear = (state.kwActive.size || (state.kwQuery || '').trim())
-    ? `<span class="kw-clear" id="kwClear">키워드 해제</span>` : '';
-
-  const hint = groups.length
-    ? '' : `<span class="kw-hint">저장된 그룹이 없습니다 · 키워드를 입력하고 “그룹 저장”을 누르세요</span>`;
-
-  box.innerHTML = chips + clear + hint;
-
-  // 칩 클릭 -> 활성 토글
-  $$("#kwGroups .kw-chip").forEach(ch => ch.onclick = () => {
-    const id = ch.dataset.kw;
-    if (state.kwActive.has(id)) state.kwActive.delete(id); else state.kwActive.add(id);
-    state.page = 1;
-    state.drillDown = null;
-    render();
-  });
-
-  // 수정
-  $$("#kwGroups [data-kwedit]").forEach(b => b.onclick = (e) => {
-    e.stopPropagation();
-    kwBeginEdit(b.dataset.kwedit);
-  });
-
-  // 삭제
-  $$("#kwGroups [data-kwdel]").forEach(b => b.onclick = (e) => {
-    e.stopPropagation();
-    const id = b.dataset.kwdel;
-    const g = (state.kwGroups || []).find(x => x.id === id);
-    if (!g) return;
-    if (!confirm(`"${g.label}" 그룹을 삭제할까요?`)) return;
-    state.kwGroups = state.kwGroups.filter(x => x.id !== id);
-    state.kwActive.delete(id);
-    if (state.kwEditing === id) kwCancelEdit(true);
-    kwPersist();
-    state.page = 1;
-    render();
-  });
-
-  const clr = $("#kwClear");
-  if (clr) clr.onclick = () => kwClearAll();
-}
+/* 키워드 그룹 UI는 사이드바 Keywords 섹션(filters.js)에서 그린다.
+   app.js가 render()마다 호출하므로 호환용으로 남겨 둔다. */
+function renderKeywordChips() { /* no-op */ }
 
 /* ============================================
    UI - 편집 모드
