@@ -20,6 +20,12 @@ const state = {
   subcategories: new Set(),
   fabrics: new Set(),
 
+  // === 제품명 키워드 검색 / 저장 그룹 (keywords.js) ===
+  kwGroups: [],               // [{id, label, include:[], exclude:[]}] · localStorage 영속
+  kwActive: new Set(),        // 현재 켜져 있는 그룹 id (여러 개면 OR)
+  kwQuery: "",                // 검색창에 입력 중인 임시 키워드
+  kwEditing: null,            // 수정 중인 그룹 id
+
   // === 분석 화면 전용 필터 (사이드바와 독립) ===
   analyticsFilter: {
     months: new Set(),

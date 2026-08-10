@@ -77,6 +77,7 @@ function renderContent() {
 
 function render() {
   buildGenderTabs();
+  if (typeof renderKeywordChips === "function") renderKeywordChips();
   buildFacets();
   buildCrumbs();
   renderContent();
@@ -118,6 +119,8 @@ function bindGlobalEvents() {
     state.fabrics.clear();
     state.page = 1;
     state.drillDown = null;
+    // 키워드 검색도 함께 해제 (저장된 그룹 자체는 지우지 않음)
+    if (typeof kwClearAll === "function") { kwClearAll(); return; }
     render();
   };
 
@@ -185,6 +188,9 @@ async function init() {
 
     // 2. 전역 이벤트 바인딩
     bindGlobalEvents();
+
+    // 2-1. 키워드 검색/그룹 초기화 (localStorage에서 저장된 그룹 로드)
+    if (typeof kwInit === "function") kwInit();
 
     // 3. 최초 렌더
     render();

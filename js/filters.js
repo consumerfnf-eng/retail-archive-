@@ -3,11 +3,28 @@
    사이드바 필터 + 빵부스러기(crumbs)
    ============================================ */
 
-function genderScope() {
+/* 키워드 검색이 적용되기 전의 기준 범위 (성별 탭 + 제외 항목만 반영)
+   키워드 그룹 칩의 건수 계산에 사용 */
+function genderScopeRaw() {
   return RETAIL_DATA.filter(d =>
     !removed.has(d._id) &&
     (state.gender === "All" || d.gender === state.gender)
   );
+}
+
+/* 제품명 키워드 검색까지 반영한 기준 범위
+   filtered() / analyticsFiltered() / 모든 facet 카운트 / CSV가 여기서 파생된다 */
+function genderScope() {
+  const base = genderScopeRaw();
+  if (typeof kwMatchers !== "function") return base;
+  const matchers = kwMatchers();          // 행마다가 아니라 한 번만 컴파일
+  if (!matchers.length) return base;
+  return base.filter(d => {
+    for (let i = 0; i < matchers.length; i++) {
+      if (kwMatchOne(d.product_name, matchers[i])) return true;   // 그룹끼리는 OR
+    }
+    return false;
+  });
 }
 
 function filtered() {
@@ -334,12 +351,32 @@ function buildCrumbs() {
         ${fmt ? fmt(v) : esc(v)}<span class="x">×</span></span>`);
     });
   });
+  // 제품명 키워드 검색 crumbs
+  const kwq = (state.kwQuery || "").trim();
+  if (kwq) {
+    c.push(`<span class="crumb kw" data-kind="kwq" data-val="1">검색: ${esc(kwq)}<span class="x">×</span></span>`);
+  }
+  (state.kwActive ? [...state.kwActive] : []).forEach(id => {
+    const g = (state.kwGroups || []).find(x => x.id === id);
+    if (g) c.push(`<span class="crumb kw" data-kind="kw" data-val="${esc(id)}">${esc(g.label)}<span class="x">×</span></span>`);
+  });
+
   $("#crumbs").innerHTML = c.join("");
   $$('#crumbs .crumb[data-kind]').forEach(cr => {
     cr.querySelector(".x").onclick = () => {
       const k = cr.dataset.kind;
       const v = cr.dataset.val;
+      if (k === "kwq") {
+        state.kwQuery = "";
+        const inp = $("#kwInput");
+        if (inp) inp.value = "";
+        state.page = 1;
+        state.drillDown = null;
+        render();
+        return;
+      }
       ({
+        kw:         state.kwActive,
         month:      state.months,
         country:    state.countries,
         brandGroup: state.brandGroups,
