@@ -1919,31 +1919,30 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 /* ============================================
    Keyword Search & Groups (제품명 키워드)
    ============================================ */
-.kw-bar {
-  margin-bottom: 12px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--line-soft);
-}
+.main-head { align-items: center; }
 .kw-row {
   display: flex; align-items: center; gap: 6px;
-  flex-wrap: wrap;
+  flex: 1;
+  min-width: 0;
 }
 .kw-ico {
   font-size: 15px;
   color: var(--ink-soft);
-  padding: 0 2px 0 1px;
   line-height: 1;
+  flex-shrink: 0;
 }
 .kw-input {
   flex: 1;
-  min-width: 260px;
-  padding: 7px 11px;
+  min-width: 0;
+  max-width: 420px;
+  height: 30px;
+  padding: 0 11px;
   font-family: inherit;
   font-size: 12.5px;
   color: var(--ink);
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: 5px;
   outline: none;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
@@ -1953,15 +1952,16 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   box-shadow: 0 0 0 2px rgba(217, 119, 87, 0.12);
 }
 .kw-label-input {
-  width: 108px;
+  width: 96px;
   flex-shrink: 0;
-  padding: 7px 10px;
+  height: 30px;
+  padding: 0 10px;
   font-family: inherit;
   font-size: 12px;
   color: var(--ink);
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: 5px;
   outline: none;
   transition: border-color 0.15s ease;
 }
@@ -1969,8 +1969,9 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .kw-label-input:focus { border-color: var(--accent); }
 .kw-btn {
   flex-shrink: 0;
-  padding: 6px 11px;
-  font-size: 11.5px;
+  height: 30px;
+  padding: 0 10px;
+  font-size: 11px;
   color: var(--ink-soft);
   background: var(--panel);
   border: 1px solid var(--line);
@@ -1989,73 +1990,40 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   border-color: var(--accent);
   color: #fff;
 }
-.kw-groups {
-  display: flex; flex-wrap: wrap; align-items: center; gap: 5px;
-  margin-top: 8px;
+
+/* crumbs 행 */
+.subhead { margin-bottom: 14px; }
+.subhead .crumbs { margin: 0; }
+
+/* 사이드바 - 키워드 그룹 행 */
+.opt.kwopt { padding-right: 3px; }
+.opt.kwopt.editing {
+  outline: 1px dashed var(--ink-soft);
+  outline-offset: -1px;
 }
-.kw-groups:empty { margin-top: 0; }
-.kw-chip {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 3px 5px 3px 10px;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 13px;
-  font-size: 11.5px;
-  color: var(--ink);
-  cursor: pointer;
-  user-select: none;
-  transition: all 0.15s ease;
-}
-.kw-chip:hover { border-color: var(--accent); }
-.kw-chip.on {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
-  font-weight: 500;
-}
-.kw-chip.editing {
-  border-color: var(--ink);
-  border-style: dashed;
-}
-.kw-chip-label { letter-spacing: 0.02em; }
-.kw-chip-cnt {
-  font-size: 10.5px;
-  color: var(--ink-soft);
-  font-variant-numeric: tabular-nums;
-}
-.kw-chip.on .kw-chip-cnt { color: rgba(255, 255, 255, 0.85); }
-.kw-chip-btn {
-  width: 16px; height: 16px;
+.kwopt-btn {
+  width: 15px; height: 15px;
   display: inline-flex; align-items: center; justify-content: center;
-  border-radius: 50%;
-  font-size: 11px;
+  border-radius: 3px;
+  font-size: 10px;
   line-height: 1;
   color: var(--ink-soft);
+  opacity: 0;
   transition: all 0.12s ease;
 }
-.kw-chip-btn:hover { background: rgba(0, 0, 0, 0.09); color: var(--ink); }
-.kw-chip.on .kw-chip-btn { color: rgba(255, 255, 255, 0.75); }
-.kw-chip.on .kw-chip-btn:hover { background: rgba(255, 255, 255, 0.22); color: #fff; }
-.kw-chip-del { font-size: 13px; }
-.kw-clear {
-  font-size: 11px;
+.opt.kwopt:hover .kwopt-btn { opacity: 1; }
+.kwopt-btn:hover { background: var(--line); color: var(--ink); }
+.kwopt-del { font-size: 13px; }
+.kwopt-del:hover { color: var(--warn); }
+.kwopt-clear {
+  font-size: 10.5px;
   color: var(--ink-soft);
   cursor: pointer;
-  padding: 3px 8px;
-  border-bottom: 1px dotted var(--line);
+  padding: 5px 6px 2px;
 }
-.kw-clear:hover { color: var(--warn); }
-.kw-hint { font-size: 11px; color: var(--ink-soft); }
-.crumb.kw {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
-  font-weight: 500;
-}
-.crumb.kw .x { color: rgba(255, 255, 255, 0.75); }
-.crumb.kw .x:hover { color: #fff; }
+.kwopt-clear:hover { color: var(--warn); }
 
-@media (max-width: 1100px) {
-  .kw-input { min-width: 180px; }
-  .kw-label-input { width: 88px; }
+@media (max-width: 1280px) {
+  .kw-input { max-width: 300px; }
+  .kw-label-input { width: 80px; }
 }
