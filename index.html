@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=20260810a">
+  <link rel="stylesheet" href="css/style.css?v=20260810b">
 </head>
 <body>
 
@@ -47,7 +47,7 @@
       <div class="kw-row">
         <span class="kw-ico">⌕</span>
         <input id="kwInput" class="kw-input" type="text" autocomplete="off" spellcheck="false"
-               placeholder="제품명 검색 · 쉼표로 여러 키워드 (예: DOWN, 다운, PUFFER, 퍼퍼, -DOWNTOWN)">
+               placeholder="제품명 검색 · 쉼표 구분 (예: DOWN, 다운, PUFFER, MA-1, -DOWNTOWN) · - 제외 / * 부분일치">
         <input id="kwLabel" class="kw-label-input" type="text" autocomplete="off" spellcheck="false"
                placeholder="그룹명">
         <button id="kwSave" class="kw-btn primary">그룹 저장</button>
@@ -83,7 +83,6 @@
     </div>
     <div class="subhead">
       <div id="crumbs" class="crumbs"></div>
-      <div id="kwGroups" class="kw-groups"></div>
     </div>
     <div id="content"></div>
   </main>
@@ -113,11 +112,11 @@
 
 <!-- 앱 스크립트 (순서 중요) -->
 <script src="js/config.js?v=20260703b"></script>
-<script src="js/state.js?v=20260810a"></script>
+<script src="js/state.js?v=20260810c"></script>
 <script src="js/utils.js?v=20260703b"></script>
 <script src="js/sheet-loader.js?v=20260729a"></script>
-<script src="js/keywords.js?v=20260810a"></script>
-<script src="js/filters.js?v=20260810a"></script>
+<script src="js/keywords.js?v=20260810b"></script>
+<script src="js/filters.js?v=20260810d"></script>
 <script src="js/gallery.js?v=20260729a"></script>
 <script src="js/analytics.js?v=20260703b"></script>
 <script src="js/csv.js?v=20260728a"></script>
