@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/style.css?v=20260810a">
 </head>
 <body>
 
@@ -42,6 +42,23 @@
 
   <!-- 메인 -->
   <main class="main">
+    <!-- 제품명 키워드 검색 + 저장 그룹 -->
+    <div class="kw-bar">
+      <div class="kw-row">
+        <span class="kw-ico">⌕</span>
+        <input id="kwInput" class="kw-input" type="text" autocomplete="off" spellcheck="false"
+               placeholder="제품명 검색 · 쉼표로 여러 키워드 (예: BOMBER, 봄버, MA-1, BLOUSON, -BOMBER BAG)">
+        <input id="kwLabel" class="kw-label-input" type="text" autocomplete="off" spellcheck="false"
+               placeholder="그룹명">
+        <button id="kwSave" class="kw-btn primary">그룹 저장</button>
+        <button id="kwCancel" class="kw-btn" hidden>취소</button>
+        <button id="kwExport" class="kw-btn" title="저장된 그룹을 JSON 파일로 내보내기">↓ JSON</button>
+        <button id="kwImport" class="kw-btn" title="JSON 파일에서 그룹 불러오기">↑ JSON</button>
+        <input id="kwFile" type="file" accept=".json,application/json" hidden>
+      </div>
+      <div id="kwGroups" class="kw-groups"></div>
+    </div>
+
     <div class="main-head">
       <div id="crumbs" class="crumbs"></div>
       <div class="actions">
@@ -97,13 +114,14 @@
 
 <!-- 앱 스크립트 (순서 중요) -->
 <script src="js/config.js?v=20260703b"></script>
-<script src="js/state.js?v=20260703b"></script>
+<script src="js/state.js?v=20260810a"></script>
 <script src="js/utils.js?v=20260703b"></script>
 <script src="js/sheet-loader.js?v=20260729a"></script>
-<script src="js/filters.js?v=20260703b"></script>
+<script src="js/keywords.js?v=20260810a"></script>
+<script src="js/filters.js?v=20260810a"></script>
 <script src="js/gallery.js?v=20260729a"></script>
 <script src="js/analytics.js?v=20260703b"></script>
 <script src="js/csv.js?v=20260728a"></script>
-<script src="js/app.js?v=20260703b"></script>
+<script src="js/app.js?v=20260810a"></script>
 </body>
 </html>
