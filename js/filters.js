@@ -16,12 +16,16 @@ function genderScopeRaw() {
    filtered() / analyticsFiltered() / 모든 facet 카운트 / CSV가 여기서 파생된다 */
 function genderScope() {
   const base = genderScopeRaw();
-  if (typeof kwMatchers !== "function") return base;
-  const matchers = kwMatchers();          // 행마다가 아니라 한 번만 컴파일
-  if (!matchers.length) return base;
+  if (typeof kwFilterSpec !== "function") return base;
+  const spec = kwFilterSpec();                       // 행마다가 아니라 한 번만 컴파일
+  const hasInc = spec.matchers.length > 0;
+  const hasExc = spec.globalExc.length > 0;
+  if (!hasInc && !hasExc) return base;
   return base.filter(d => {
-    for (let i = 0; i < matchers.length; i++) {
-      if (kwMatchRow(d, matchers[i])) return true;   // 그룹끼리는 OR
+    if (hasExc && kwRowExcluded(d, spec.globalExc)) return false;   // 제외어는 전체에 적용
+    if (!hasInc) return true;                                       // 제외어만 있으면 나머지 전부 통과
+    for (let i = 0; i < spec.matchers.length; i++) {
+      if (kwMatchRow(d, spec.matchers[i])) return true;             // 그룹끼리는 OR
     }
     return false;
   });

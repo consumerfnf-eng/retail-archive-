@@ -126,27 +126,56 @@ function kwMatchRow(d, m) {
   return kwMatchNormalized(d._kwS, d._kwG, m);
 }
 
-/* 현재 활성화된 매처 목록 (임시 검색어 + 선택된 그룹, 서로 OR)
+/* 데이터 행이 제외 조건 목록 중 하나라도 걸리는지 */
+function kwRowExcluded(d, terms) {
+  if (!terms || !terms.length) return false;
+  if (d._kwS === undefined) {
+    d._kwS = kwSpaced(d.product_name);
+    d._kwG = d._kwS.replace(/ /g, '');
+  }
+  if (!d._kwS) return false;
+  for (let i = 0; i < terms.length; i++) {
+    if (kwTermHit(terms[i], d._kwS, d._kwG)) return true;
+  }
+  return false;
+}
+
+/* 현재 활성화된 필터 사양
+   - matchers : 포함 조건 (검색어 + 선택된 그룹, 서로 OR)
+   - globalExc: 전체 결과에서 빼는 제외 조건 (검색창에 -KEYWORD 만 넣은 경우 포함)
    filter 콜백 밖에서 한 번만 호출한다 -> 행마다 재컴파일하지 않음 */
-function kwMatchers() {
-  const list = [];
+function kwFilterSpec() {
+  const matchers = [];
+  const globalExc = [];
+
   const q = (state.kwQuery || '').trim();
   if (q) {
-    const m = kwCompile(kwParse(q));
-    if (m.inc.length) list.push(m);
+    const parsed = kwParse(q);
+    const m = kwCompile(parsed);
+    // 검색창에 적은 제외어는 항상 전체 결과에 적용
+    m.exc.forEach(t => globalExc.push(t));
+    if (m.inc.length) matchers.push(m);
   }
+
   (state.kwGroups || []).forEach(g => {
-    if (state.kwActive.has(g.id)) {
-      const m = kwCompile(g);
-      if (m.inc.length) list.push(m);
-    }
+    if (!state.kwActive.has(g.id)) return;
+    const m = kwCompile(g);
+    if (m.inc.length) matchers.push(m);            // 일반 그룹
+    else m.exc.forEach(t => globalExc.push(t));    // 제외 전용 그룹
   });
-  return list;
+
+  return { matchers, globalExc };
+}
+
+/* 하위 호환 - 포함 매처만 반환 */
+function kwMatchers() {
+  return kwFilterSpec().matchers;
 }
 
 /* 활성 키워드 조건이 하나라도 있는지 */
 function kwIsActive() {
-  return kwMatchers().length > 0;
+  const spec = kwFilterSpec();
+  return spec.matchers.length > 0 || spec.globalExc.length > 0;
 }
 
 /* 그룹 하나의 매칭 건수 (성별/제외 반영, 다른 사이드바 필터는 무시) */
