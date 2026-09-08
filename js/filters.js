@@ -87,7 +87,12 @@ function facetCounts(scope, key) {
     m[v] = (m[v] || 0) + 1;
   });
   return Object.entries(m).sort((a,b) => {
-    if (key === "month") return a[0] < b[0] ? -1 : 1;
+    if (key === "month") {
+      if (typeof seasonLabelSortKey === "function") {
+        return seasonLabelSortKey(a[0]) - seasonLabelSortKey(b[0]);
+      }
+      return a[0] < b[0] ? -1 : 1;
+    }
     if (key === "category") {
       const order = ["outerwear","top","bottom","dress","shoe","shoes","bag","acc"];
       const ai = order.indexOf(a[0]);
