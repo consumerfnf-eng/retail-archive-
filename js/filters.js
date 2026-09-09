@@ -5,6 +5,12 @@
 
 /* 키워드 검색이 적용되기 전의 기준 범위 (성별 탭 + 제외 항목만 반영)
    키워드 그룹 칩의 건수 계산에 사용 */
+/* 시즌 라벨 헬퍼 - season.js가 있으면 원본(2025.12)에서 시즌을 계산하고,
+   없으면 기존 monthLabel(d.month) 동작으로 되돌아간다. */
+function SEASON_LBL(d) {
+  return (typeof seasonLabelOf === "function") ? seasonLabelOf(d) : monthLabel(d.month);
+}
+
 function genderScopeRaw() {
   return RETAIL_DATA.filter(d =>
     !removed.has(d._id) &&
@@ -34,7 +40,7 @@ function genderScope() {
 function filtered() {
   // 사이드바 필터 적용 - 갤러리용
   return genderScope().filter(d =>
-          (!state.months.size        || state.months.has(monthLabel(d.month))) &&
+          (!state.months.size        || state.months.has(SEASON_LBL(d))) &&
     (!state.countries.size    || state.countries.has(d.country || "GL")) &&
     (!state.brandGroups.size  || state.brandGroups.has(d.brandGroup)) &&
     (!state.brands.size       || state.brands.has(d.brand)) &&
@@ -51,7 +57,7 @@ function filtered() {
 function analyticsFiltered() {
   const af = state.analyticsFilter;
   return genderScope().filter(d =>
-          (!af.months.size           || af.months.has(monthLabel(d.month))) &&
+          (!af.months.size           || af.months.has(SEASON_LBL(d))) &&
     (!af.countries.size    || af.countries.has(d.country || "GL")) &&
     (!af.brandGroups.size  || af.brandGroups.has(d.brandGroup)) &&
     (!af.brands.size       || af.brands.has(d.brand))
@@ -83,7 +89,7 @@ function buildGenderTabs() {
 function facetCounts(scope, key) {
   const m = {};
   scope.forEach(d => {
-          const v = key === "month" ? (monthLabel(d[key]) || "—") : (d[key] || "—");
+          const v = key === "month" ? (SEASON_LBL(d) || "—") : (d[key] || "—");
     m[v] = (m[v] || 0) + 1;
   });
   return Object.entries(m).sort((a,b) => {
@@ -138,7 +144,7 @@ function fabricCounts(scope) {
 
 function buildFacets() {
   const scope = genderScope();
-     const periodFilteredScope = state.months.size ? scope.filter(d => state.months.has(monthLabel(d.month))) : scope;
+     const periodFilteredScope = state.months.size ? scope.filter(d => state.months.has(SEASON_LBL(d))) : scope;
 
       // Country 필터가 선택된 경우 BrandGroups/Brands scope를 줄임
          const countryFilteredScope = state.countries.size
@@ -150,7 +156,7 @@ function buildFacets() {
          const categoryFilteredScope = state.categories.size ? brandFilteredScope.filter(d => state.categories.has(d.category)) : brandFilteredScope;
 
          const defs = [
-            {id:"Period",       title:"Period · 시즌",        key:"month",       set:state.months,        fmt:monthLabel,   scope: scope},
+            {id:"Period",       title:"Period · 시즌",        key:"month",       set:state.months,                          scope: scope},
             {id:"Country",      title:"Country · 국가",       key:"country",     set:state.countries,      fmt:countryLabel, scope: periodFilteredScope},
             {id:"BrandGroups",  title:"Category · 카테고리",  key:"brandGroup",  set:state.brandGroups,                       scope: countryFilteredScope},
             {id:"Brands",       title:"Brands",               key:"brand",       set:state.brands,                           scope: countryFilteredScope},
@@ -397,7 +403,7 @@ function buildFacets() {
 function buildCrumbs() {
   const c = [`<span class="crumb static">${state.gender==='All'?'전체':esc(state.gender)}</span>`];
   const groups = [
-    [state.months,        "month",      monthLabel],
+    [state.months,        "month",      null],
     [state.countries,     "country",    countryLabel],
     [state.brandGroups,   "brandGroup", null],
     [state.brands,        "brand",      null],

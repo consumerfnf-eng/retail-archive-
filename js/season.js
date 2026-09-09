@@ -86,18 +86,47 @@ function monthLabel(v) {
   return String(sy).slice(2) + "' " + s.label;
 }
 
+/* ============================================
+   데이터 행 -> 시즌 라벨
+
+   sheet-loader가 d.month에 이미 "2025 4Q" 같은 분기 문자열을 넣어 두는 경우가
+   있어서, 월 정보가 살아 있는 필드를 우선 찾는다.
+   (구글 시트 원본: season = "2025.12")
+   ============================================ */
+function seasonSourceOf(d) {
+  if (!d) return '';
+  const cands = [d.season, d.month, d.yearmonth, d.year_month, d.date];
+  for (let i = 0; i < cands.length; i++) {
+    if (parseYearMonth(cands[i])) return cands[i];       // 월까지 읽히는 값 우선
+  }
+  return (d.season != null && d.season !== '') ? d.season : (d.month || '');
+}
+
+/* 데이터 행 -> "25' WINTER" */
+function seasonLabelOf(d) {
+  return monthLabel(seasonSourceOf(d));
+}
+
 /* 디버그용: 콘솔에서 seasonCheck() 실행하면 원본 -> 라벨 매핑을 보여준다 */
 function seasonCheck(n) {
   if (typeof RETAIL_DATA === 'undefined' || !RETAIL_DATA.length) {
     console.log('데이터가 아직 로드되지 않았습니다.');
     return;
   }
+  const sample = RETAIL_DATA[0];
+  console.log('첫 행의 후보 필드:', {
+    season: sample.season, month: sample.month,
+    yearmonth: sample.yearmonth, date: sample.date
+  });
+
   const seen = new Map();
   RETAIL_DATA.forEach(d => {
-    const raw = d.month;
-    if (!seen.has(String(raw))) seen.set(String(raw), monthLabel(raw));
+    const raw = String(seasonSourceOf(d));
+    if (!seen.has(raw)) seen.set(raw, seasonLabelOf(d));
   });
   console.table([...seen].slice(0, n || 40).map(([raw, label]) => ({ 원본: raw, 시즌: label })));
+
   const bad = [...seen].filter(([raw, label]) => raw === label && raw !== '');
   if (bad.length) console.warn('시즌으로 변환되지 않은 값:', bad.map(b => b[0]));
+  else console.log('전부 정상 변환되었습니다.');
 }
