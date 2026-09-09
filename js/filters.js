@@ -5,12 +5,6 @@
 
 /* 키워드 검색이 적용되기 전의 기준 범위 (성별 탭 + 제외 항목만 반영)
    키워드 그룹 칩의 건수 계산에 사용 */
-/* 시즌 라벨 헬퍼 - season.js가 있으면 원본(2025.12)에서 시즌을 계산하고,
-   없으면 기존 monthLabel(d.month) 동작으로 되돌아간다. */
-function SEASON_LBL(d) {
-  return (typeof seasonLabelOf === "function") ? seasonLabelOf(d) : monthLabel(d.month);
-}
-
 function genderScopeRaw() {
   return RETAIL_DATA.filter(d =>
     !removed.has(d._id) &&
@@ -40,7 +34,7 @@ function genderScope() {
 function filtered() {
   // 사이드바 필터 적용 - 갤러리용
   return genderScope().filter(d =>
-          (!state.months.size        || state.months.has(SEASON_LBL(d))) &&
+          (!state.months.size        || state.months.has(monthLabel(d.month))) &&
     (!state.countries.size    || state.countries.has(d.country || "GL")) &&
     (!state.brandGroups.size  || state.brandGroups.has(d.brandGroup)) &&
     (!state.brands.size       || state.brands.has(d.brand)) &&
@@ -57,7 +51,7 @@ function filtered() {
 function analyticsFiltered() {
   const af = state.analyticsFilter;
   return genderScope().filter(d =>
-          (!af.months.size           || af.months.has(SEASON_LBL(d))) &&
+          (!af.months.size           || af.months.has(monthLabel(d.month))) &&
     (!af.countries.size    || af.countries.has(d.country || "GL")) &&
     (!af.brandGroups.size  || af.brandGroups.has(d.brandGroup)) &&
     (!af.brands.size       || af.brands.has(d.brand))
@@ -89,15 +83,12 @@ function buildGenderTabs() {
 function facetCounts(scope, key) {
   const m = {};
   scope.forEach(d => {
-          const v = key === "month" ? (SEASON_LBL(d) || "—") : (d[key] || "—");
+          const v = key === "month" ? (monthLabel(d.month) || "—") : (d[key] || "—");
     m[v] = (m[v] || 0) + 1;
   });
   return Object.entries(m).sort((a,b) => {
     if (key === "month") {
-      if (typeof seasonLabelSortKey === "function") {
-        return seasonLabelSortKey(a[0]) - seasonLabelSortKey(b[0]);
-      }
-      return a[0] < b[0] ? -1 : 1;
+      return seasonLabelSortKey(a[0]) - seasonLabelSortKey(b[0]);
     }
     if (key === "category") {
       const order = ["outerwear","top","bottom","dress","shoe","shoes","bag","acc"];
@@ -144,7 +135,7 @@ function fabricCounts(scope) {
 
 function buildFacets() {
   const scope = genderScope();
-     const periodFilteredScope = state.months.size ? scope.filter(d => state.months.has(SEASON_LBL(d))) : scope;
+     const periodFilteredScope = state.months.size ? scope.filter(d => state.months.has(monthLabel(d.month))) : scope;
 
       // Country 필터가 선택된 경우 BrandGroups/Brands scope를 줄임
          const countryFilteredScope = state.countries.size

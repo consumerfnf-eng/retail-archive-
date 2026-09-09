@@ -10,14 +10,50 @@ const uniq = a => [...new Set(a)];
 const esc = s => String(s == null ? "" : s)
   .replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
+/* ============================================
+   시즌 라벨
+     SPRING  3, 4, 5월
+     SUMMER  6, 7, 8월
+     FALL    9, 10, 11월
+     WINTER  12, 1, 2월  ← 12월의 연도를 따라감
+                           25' WINTER = 2025-12 + 2026-01 + 2026-02
+
+   sheet-loader가 "2025.09" 등을 "2025-09" 로 정규화해서
+   month / season 양쪽에 넣어 준다.
+   ============================================ */
+const SEASON_NAMES = ["SPRING", "SUMMER", "FALL", "WINTER"];
+
+/* 월(1~12) -> 시즌 인덱스 */
+function seasonIndexOfMonth(m) {
+  if (m >= 3 && m <= 5)  return 0;
+  if (m >= 6 && m <= 8)  return 1;
+  if (m >= 9 && m <= 11) return 2;
+  return 3;                                  // 12, 1, 2
+}
+
+/* 1·2월은 앞 해 WINTER에 붙는다 */
+function seasonYearOf(y, m) {
+  return (m === 1 || m === 2) ? y - 1 : y;
+}
+
+/* "2025-09" -> "25' FALL"  (형식이 다르면 원본 그대로) */
 const monthLabel = m => {
-     if (!m || !m.includes("-")) return m || "";
-     const [y, mm] = m.split("-");
-     const month = parseInt(mm, 10);
-     if (month < 1 || month > 12) return m;
-     const q = Math.ceil(month / 3);
-     return y + " " + q + "Q";
+  if (!m) return "";
+  const s = String(m).trim();
+  const mt = s.match(/^(\d{4})-(\d{1,2})/);
+  if (!mt) return s;
+  const y = +mt[1], month = +mt[2];
+  if (month < 1 || month > 12) return s;
+  return String(seasonYearOf(y, month)).slice(2) + "' " + SEASON_NAMES[seasonIndexOfMonth(month)];
 };
+
+/* 라벨 -> 정렬 키 ("25' SPRING" -> 20250) · 시간순 정렬용 */
+function seasonLabelSortKey(label) {
+  const mt = String(label || "").match(/^(\d{2})'\s*(SPRING|SUMMER|FALL|WINTER)$/i);
+  if (!mt) return 9999999;                   // 못 읽은 값은 맨 뒤로
+  const idx = SEASON_NAMES.indexOf(mt[2].toUpperCase());
+  return (2000 + (+mt[1])) * 10 + (idx === -1 ? 9 : idx);
+}
 
 const PH_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>';
 
