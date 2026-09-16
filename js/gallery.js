@@ -71,7 +71,7 @@ function renderPlainGallery(data, opts) {
         <div class="pcat">${esc(d.category)}${d.subcategory && d.subcategory!=='—' ? ' · ' + esc(d.subcategory) : ''}${d._colorwayCount > 1 ? `<span class="cw-badge">${d._colorwayCount} colors</span>` : ''}</div>
         <div class="pcolors">${(d.hex_colors || []).slice(0,7).map(h =>
           `<span class="dot" style="background:${esc(h)}"></span>`).join("")}</div>
-        ${d._sheetRow ? `<div class="prow" title="구글 시트에서 이 제품이 있는 행">${esc(d._sheetLabel || '')} ${d._sheetRow}</div>` : ''}
+        <!-- 시트 행 표시는 카드에서 제거 (모달 Sheet Row 에서 확인) -->
       </div>
     </div>`;
   }).join("");
