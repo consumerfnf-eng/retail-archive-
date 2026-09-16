@@ -87,6 +87,19 @@ function render() {
     `<b>${uniq(RETAIL_DATA.map(d => d.season || d.month)).length}</b> seasons`;
 }
 
+/* ---- 컬러웨이 병합 적용 ---- */
+function applyColorwayMode() {
+  if (state.mergeColorway && typeof mergeColorways === "function") {
+    RETAIL_DATA = mergeColorways(RETAIL_DATA_RAW);
+    const absorbed = RETAIL_DATA_RAW.length - RETAIL_DATA.length;
+    console.log(`[Colorway] 병합 ON · ${RETAIL_DATA_RAW.length}행 -> ${RETAIL_DATA.length}건 (${absorbed}행 흡수)`);
+  } else {
+    RETAIL_DATA = RETAIL_DATA_RAW;
+    console.log(`[Colorway] 병합 OFF · ${RETAIL_DATA.length}행`);
+  }
+  window.RETAIL_DATA = RETAIL_DATA;
+}
+
 /* ---- 전역 이벤트 바인딩 ---- */
 function bindGlobalEvents() {
   // 모달 외부 클릭 닫기
@@ -123,6 +136,22 @@ function bindGlobalEvents() {
     if (typeof kwClearAll === "function") { kwClearAll(); return; }
     render();
   };
+
+  // 컬러웨이 병합 토글
+  const cwToggle = $("#cwMerge");
+  if (cwToggle) {
+    cwToggle.checked = state.mergeColorway;
+    cwToggle.onchange = () => {
+      state.mergeColorway = cwToggle.checked;
+      applyColorwayMode();
+      state.page = 1;
+      state.drillDown = null;
+      render();
+      showToast(state.mergeColorway
+        ? `컬러웨이 병합 ON · ${RETAIL_DATA.length}건`
+        : `컬러웨이 병합 OFF · ${RETAIL_DATA.length}행`);
+    };
+  }
 
   // CSV 다운로드 (필터 드롭다운)
   const colorFilteredWrap = $("#csvColorFilteredWrap");
@@ -179,7 +208,9 @@ function bindGlobalEvents() {
 async function init() {
   try {
     // 1. Google Sheets에서 데이터 로드
-    RETAIL_DATA = await loadFromSheet();
+    RETAIL_DATA_RAW = await loadFromSheet();
+    window.RETAIL_DATA_RAW = RETAIL_DATA_RAW;
+    applyColorwayMode();
 
     if (!RETAIL_DATA.length) {
       showLoaderError("시트에서 유효한 데이터를 찾을 수 없습니다. 시트 구조를 확인하세요.");

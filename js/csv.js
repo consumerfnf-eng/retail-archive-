@@ -19,7 +19,7 @@ function colorRows(data, accFilter) {
    if (accFilter === "no-acc") data = data.filter(d => !ACC_CATS.includes(d.category));
    else if (accFilter === "acc-only") data = data.filter(d => ACC_CATS.includes(d.category));
   const head = ["season","country","brand_group","court","brand","gender","category","subcategory","fabric","fabric_group","product_name",
-                "color_names","hex_codes","color_count","pct_in_image","image_url"];
+                "colorway_count","color_names","hex_codes","color_count","pct_in_image","image_url"];
   const rows = [head];
   data.forEach(d => {
     const isCourt = d.brandGroup === "코트" ? "Y" : "";
@@ -53,6 +53,7 @@ function colorRows(data, accFilter) {
       d.fabric || '',
       d.fabricKey ? fabricLabel(d.fabricKey) : '',
       d.product_name,
+      d._colorwayCount || 1,
       names.join(" | "),
       hexes.join(" | "),
       count,
@@ -65,7 +66,7 @@ function colorRows(data, accFilter) {
 
 function productRows(data) {
   const head = ["season","country","brand_group","court","brand","gender","category","subcategory","fabric","fabric_group","product_name",
-                "colors","hex_colors","top_hex","image_url"];
+                "colorway_count","variant_names","colors","hex_colors","top_hex","image_url"];
   const rows = [head];
   data.forEach(d => {
     const isCourt = d.brandGroup === "코트" ? "Y" : "";
@@ -84,6 +85,8 @@ function productRows(data) {
       d.fabric || '',
       d.fabricKey ? fabricLabel(d.fabricKey) : '',
       d.product_name,
+      d._colorwayCount || 1,
+      (d._variants || []).map(v => v.product_name).join(" | "),
       (d.colors || []).join(" | "),
       (d.hex_colors || []).join(" | "),
       top,

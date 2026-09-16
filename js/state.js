@@ -6,6 +6,9 @@
 // 데이터는 sheet-loader가 채워줌
 let RETAIL_DATA = [];
 
+// 시트에서 읽은 원본(컬러웨이 병합 전). 토글을 끄면 이쪽을 그대로 쓴다.
+let RETAIL_DATA_RAW = [];
+
 // 잘못 분류된 제품 숨김 (세션 동안 유지)
 const removed = new Set();
 
@@ -34,6 +37,9 @@ const state = {
     brands: new Set(),
     // category는 도표 안 드롭다운(fabricCategoryView)으로 따로 처리
   },
+
+  // 같은 아이템의 컬러 변형을 한 카드로 합칠지 (colorway.js)
+  mergeColorway: true,
 
   view: "gallery",
   page: 1,

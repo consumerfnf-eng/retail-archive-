@@ -63,23 +63,24 @@ function renderPlainGallery(data, opts) {
 
     return `<div class="pcard" data-idx="${d._idx !== undefined ? d._idx : gi}">
       <div class="imgbox ${hasImage ? '' : 'no-img'}">
-        <button class="card-x" data-rm="${d._id}" title="잘못 분류된 제품 — 제거">×</button>
         ${imgContent}
       </div>
       <div class="pinfo">
         <div class="pbrand">${esc(d.brand)} · ${esc(d.gender)}</div>
         <div class="pname">${esc(d.product_name)}</div>
-        <div class="pcat">${esc(d.category)}${d.subcategory && d.subcategory!=='—' ? ' · ' + esc(d.subcategory) : ''}</div>
+        <div class="pcat">${esc(d.category)}${d.subcategory && d.subcategory!=='—' ? ' · ' + esc(d.subcategory) : ''}${d._colorwayCount > 1 ? `<span class="cw-badge">${d._colorwayCount} colors</span>` : ''}</div>
         <div class="pcolors">${(d.hex_colors || []).slice(0,7).map(h =>
           `<span class="dot" style="background:${esc(h)}"></span>`).join("")}</div>
+        ${d._sheetRow ? `<div class="prow" title="구글 시트에서 이 제품이 있는 행">${esc(d._sheetLabel || '')} ${d._sheetRow}</div>` : ''}
       </div>
     </div>`;
   }).join("");
 
-  const restoreBar = removed.size
+  // 제거 기능을 없앴으므로 복원 바도 표시하지 않는다.
+  // 이전에 제외해 둔 항목이 남아 있을 때만 복원 안내를 보여 준다.
+  const restoreBar = (typeof removed !== 'undefined' && removed.size)
     ? `<div class="restore-bar">
-         <span>제외된 제품 ${removed.size}개 (갤러리·분석·CSV에서 빠짐)</span>
-         <button id="viewRemoved">목록 보기 · 선택 복원</button>
+         <span>이전에 제외한 제품 ${removed.size}개가 남아 있습니다</span>
          <button id="restoreAll">전체 복원</button>
        </div>`
     : '';
@@ -111,7 +112,7 @@ function renderColorArchive(data) {
     const badge = isCutRow(d) ? '<span class="cl-badge">제품컷</span>' : '';
     return `<tr>
       <td class="cl-brand">${esc(d.brand)}${badge}</td>
-      <td class="cl-prod">${esc(d.product_name)}</td>
+      <td class="cl-prod">${esc(d.product_name)}${d._colorwayCount > 1 ? ` <span class="cw-badge">${d._colorwayCount}</span>` : ''}</td>
       <td class="cl-cat">${esc(d.category)}</td>
       <td class="cl-colors">${swatches}</td>
       <td class="cl-hex">${esc(hexes.join(' '))}</td>
@@ -199,6 +200,8 @@ function openModal(d) {
       <div class="mrow"><span class="k">Season</span><span class="v">${esc(monthLabel(d.season) || '—')}</span></div>
       <div class="mrow"><span class="k">Category</span><span class="v">${esc(d.category)}</span></div>
       <div class="mrow"><span class="k">Subcategory</span><span class="v">${esc(d.subcategory || '—')}</span></div>
+      <div class="mrow"><span class="k">Sheet Row</span><span class="v">${esc(d._sheetLabel || '—')} ${d._variantRows && d._variantRows.length > 1 ? esc(d._variantRows.join(', ')) : (d._sheetRow || '—')}</span></div>
+      ${d._colorwayCount > 1 ? `<div class="mrow"><span class="k">Colorways</span><span class="v">${d._colorwayCount}종</span></div>` : ''}
       <div class="mrow"><span class="k">Fabric</span><span class="v">${fabricDisplay}</span></div>
       <div style="font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-soft);margin:16px 0 4px">Colors</div>
       <div class="mcolorlist">${colorChips}</div>
