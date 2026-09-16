@@ -147,11 +147,38 @@ function pager(totalPages) {
   return `<div class="pager">${btns.join("")}</div>`;
 }
 
+/* 변형이 많을 때 시트 행번호를 짧게 (61~91 · 31행) */
+function sheetRowText(d) {
+  const rows = d._variantRows;
+  if (!rows || rows.length <= 1) return String(d._sheetRow || '—');
+  if (rows.length <= 6) return rows.join(', ');
+  const nums = rows.map(Number).filter(n => !isNaN(n)).sort((a, b) => a - b);
+  if (!nums.length) return rows.length + '행';
+  return nums[0] + '~' + nums[nums.length - 1] + ' · ' + rows.length + '행';
+}
+
 function openModal(d) {
   const cN = (d.colors && d.colors.length) || 0;
   const hN = (d.hex_colors && d.hex_colors.length) || 0;
+  const paired = (cN > 0 && hN > 0 && cN === hN);
+  const total = Math.max(cN, hN);
+
+  // 컬러가 많으면 컴팩트 모드: 스와치 + hex 만 촘촘히 흘려 보낸다
+  const COMPACT_FROM = 3;
+  const compact = total > COMPACT_FROM;
+
   let colorChips;
-  if (cN > 0 && hN > 0 && cN === hN) {
+  if (compact) {
+    const items = [];
+    for (let i = 0; i < total; i++) {
+      const hx = (d.hex_colors && d.hex_colors[i]) || '';
+      const nm = (d.colors && d.colors[i]) || '';
+      const label = hx || nm;
+      items.push(`<span class="mc-mini" title="${esc(nm || hx)}">
+        ${hx ? `<i style="background:${esc(hx)}"></i>` : ''}<b>${esc(label)}</b></span>`);
+    }
+    colorChips = items.join("");
+  } else if (paired) {
     colorChips = d.colors.map((c,i) => {
       const hx = d.hex_colors[i];
       return `<div class="mc"><i style="background:${esc(hx)}"></i>
@@ -200,11 +227,11 @@ function openModal(d) {
       <div class="mrow"><span class="k">Season</span><span class="v">${esc(monthLabel(d.season) || '—')}</span></div>
       <div class="mrow"><span class="k">Category</span><span class="v">${esc(d.category)}</span></div>
       <div class="mrow"><span class="k">Subcategory</span><span class="v">${esc(d.subcategory || '—')}</span></div>
-      <div class="mrow"><span class="k">Sheet Row</span><span class="v">${esc(d._sheetLabel || '—')} ${d._variantRows && d._variantRows.length > 1 ? esc(d._variantRows.join(', ')) : (d._sheetRow || '—')}</span></div>
+      <div class="mrow"><span class="k">Sheet Row</span><span class="v">${esc(d._sheetLabel || '—')} ${esc(sheetRowText(d))}</span></div>
       ${d._colorwayCount > 1 ? `<div class="mrow"><span class="k">Colorways</span><span class="v">${d._colorwayCount}종</span></div>` : ''}
       <div class="mrow"><span class="k">Fabric</span><span class="v">${fabricDisplay}</span></div>
-      <div style="font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-soft);margin:16px 0 4px">Colors</div>
-      <div class="mcolorlist">${colorChips}</div>
+      <div style="font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-soft);margin:16px 0 6px">Colors${total ? ` <span style="color:var(--ink);font-weight:600">${total}</span>` : ''}</div>
+      <div class="mcolorlist${compact ? ' compact' : ''}">${colorChips}</div>
       ${hasImage ? `<div style="margin-top:18px"><a href="${esc(d.image_url)}" target="_blank"
         style="font-size:11px;color:var(--accent);letter-spacing:.05em">원본 이미지 열기 ↗</a></div>` : ''}
     </div>`;
