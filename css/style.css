@@ -2027,3 +2027,37 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   .kw-input { max-width: 300px; }
   .kw-label-input { width: 80px; }
 }
+
+/* ============================================
+   Colorway Merge
+   ============================================ */
+.cw-toggle {
+  display: inline-flex; align-items: center; gap: 5px;
+  flex-shrink: 0;
+  height: 30px;
+  padding: 0 9px;
+  font-size: 11px;
+  color: var(--ink-soft);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+.cw-toggle:hover { color: var(--ink); border-color: var(--accent); }
+.cw-toggle input { width: 12px; height: 12px; accent-color: var(--accent); cursor: pointer; margin: 0; }
+.cw-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 5px;
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--ink-soft);
+  background: var(--line-soft, rgba(0,0,0,.05));
+  border-radius: 3px;
+  vertical-align: middle;
+  font-variant-numeric: tabular-nums;
+}
