@@ -342,7 +342,7 @@ function openModal(d) {
 
   $("#modalbox").innerHTML = `
     <div class="mimg ${hasShot ? '' : 'no-img'}" id="mimgBox"
-         style="position:relative;min-width:0;overflow:hidden">
+         style="position:relative;min-width:0;overflow:hidden;align-self:stretch">
       ${hasShot ? '' : noImgContent}
     </div>
     <div class="mbody" style="min-width:0;overflow-x:hidden">
@@ -363,13 +363,27 @@ function openModal(d) {
         style="font-size:11px;color:var(--accent);letter-spacing:.05em">원본 이미지 열기 ↗</a></div>` : ''}
     </div>`;
 
-  // 그리드 컬럼을 JS로 고정 - 이미지 원본 크기가 컬럼을 밀어내지 못하게
-  const box = $("#modalbox");
+  // 그리드 컬럼 + 이미지 높이를 JS로 고정
+  //  - 컬럼: 이미지 원본 크기가 컬럼을 밀어내지 못하게 minmax(0,1fr)
+  //  - 높이: 정보 패널이 길어져도 이미지가 행 높이를 꽉 채우도록 (아래 여백 제거)
+  const box  = $("#modalbox");
+  const mbox = $("#mimgBox");
+  const narrow = window.innerWidth <= 1040;
   if (box) {
     box.style.display = 'grid';
-    box.style.gridTemplateColumns = (window.innerWidth <= 1040)
-      ? 'minmax(0, 1fr)'
-      : 'minmax(0, 1fr) minmax(0, 1fr)';
+    box.style.gridTemplateColumns = narrow ? 'minmax(0, 1fr)' : 'minmax(0, 1fr) minmax(0, 1fr)';
+    box.style.alignItems = 'stretch';
+    // 정보가 짧을 때 이미지가 납작해지지 않도록 최소 높이 확보
+    box.style.minHeight = narrow ? '' : 'min(74vh, 560px)';
+  }
+  if (mbox) {
+    if (narrow) {
+      mbox.style.aspectRatio = '16 / 10';   // 세로 1단일 때는 가로형으로
+      mbox.style.height = '';
+    } else {
+      mbox.style.aspectRatio = 'auto';      // 정사각 고정 해제
+      mbox.style.height = '100%';           // 행 높이를 꽉 채움
+    }
   }
 
   if (hasShot) renderModalShot();
