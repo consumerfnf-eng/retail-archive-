@@ -55,6 +55,10 @@
         <button id="kwExport" class="kw-btn" title="저장된 그룹을 JSON 파일로 내보내기">↓</button>
         <button id="kwImport" class="kw-btn" title="JSON 파일에서 그룹 불러오기">↑</button>
         <input id="kwFile" type="file" accept=".json,application/json" hidden>
+        <label class="cw-toggle" title="같은 아이템의 컬러 변형을 한 카드로 합칩니다">
+          <input type="checkbox" id="cwMerge" checked>
+          <span>컬러웨이 병합</span>
+        </label>
       </div>
       <div class="actions">
         <div id="viewControls" class="viewtoggle"></div>
@@ -112,14 +116,15 @@
 
 <!-- 앱 스크립트 (순서 중요) -->
 <script src="js/config.js?v=20260703b"></script>
-<script src="js/state.js?v=20260810c"></script>
+<script src="js/state.js?v=20260909a"></script>
 <script src="js/utils.js?v=20260909a"></script>
 <script src="js/sheet-loader.js?v=20260729a"></script>
+<script src="js/colorway.js?v=20260909b"></script>
 <script src="js/keywords.js?v=20260811a"></script>
 <script src="js/filters.js?v=20260909a"></script>
-<script src="js/gallery.js?v=20260729a"></script>
+<script src="js/gallery.js?v=20260909a"></script>
 <script src="js/analytics.js?v=20260703b"></script>
-<script src="js/csv.js?v=20260728a"></script>
-<script src="js/app.js?v=20260810a"></script>
+<script src="js/csv.js?v=20260909a"></script>
+<script src="js/app.js?v=20260909a"></script>
 </body>
 </html>

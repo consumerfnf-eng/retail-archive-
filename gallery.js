@@ -68,7 +68,7 @@ function renderPlainGallery(data, opts) {
       <div class="pinfo">
         <div class="pbrand">${esc(d.brand)} · ${esc(d.gender)}</div>
         <div class="pname">${esc(d.product_name)}</div>
-        <div class="pcat">${esc(d.category)}${d.subcategory && d.subcategory!=='—' ? ' · ' + esc(d.subcategory) : ''}</div>
+        <div class="pcat">${esc(d.category)}${d.subcategory && d.subcategory!=='—' ? ' · ' + esc(d.subcategory) : ''}${d._colorwayCount > 1 ? `<span class="cw-badge">${d._colorwayCount} colors</span>` : ''}</div>
         <div class="pcolors">${(d.hex_colors || []).slice(0,7).map(h =>
           `<span class="dot" style="background:${esc(h)}"></span>`).join("")}</div>
         ${d._sheetRow ? `<div class="prow" title="구글 시트에서 이 제품이 있는 행">${esc(d._sheetLabel || '')} ${d._sheetRow}</div>` : ''}
@@ -112,7 +112,7 @@ function renderColorArchive(data) {
     const badge = isCutRow(d) ? '<span class="cl-badge">제품컷</span>' : '';
     return `<tr>
       <td class="cl-brand">${esc(d.brand)}${badge}</td>
-      <td class="cl-prod">${esc(d.product_name)}</td>
+      <td class="cl-prod">${esc(d.product_name)}${d._colorwayCount > 1 ? ` <span class="cw-badge">${d._colorwayCount}</span>` : ''}</td>
       <td class="cl-cat">${esc(d.category)}</td>
       <td class="cl-colors">${swatches}</td>
       <td class="cl-hex">${esc(hexes.join(' '))}</td>
@@ -200,7 +200,8 @@ function openModal(d) {
       <div class="mrow"><span class="k">Season</span><span class="v">${esc(monthLabel(d.season) || '—')}</span></div>
       <div class="mrow"><span class="k">Category</span><span class="v">${esc(d.category)}</span></div>
       <div class="mrow"><span class="k">Subcategory</span><span class="v">${esc(d.subcategory || '—')}</span></div>
-      <div class="mrow"><span class="k">Sheet Row</span><span class="v">${esc(d._sheetLabel || '—')} ${d._sheetRow || '—'}</span></div>
+      <div class="mrow"><span class="k">Sheet Row</span><span class="v">${esc(d._sheetLabel || '—')} ${d._variantRows && d._variantRows.length > 1 ? esc(d._variantRows.join(', ')) : (d._sheetRow || '—')}</span></div>
+      ${d._colorwayCount > 1 ? `<div class="mrow"><span class="k">Colorways</span><span class="v">${d._colorwayCount}종</span></div>` : ''}
       <div class="mrow"><span class="k">Fabric</span><span class="v">${fabricDisplay}</span></div>
       <div style="font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-soft);margin:16px 0 4px">Colors</div>
       <div class="mcolorlist">${colorChips}</div>
